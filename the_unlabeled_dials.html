@@ -1,0 +1,556 @@
+<title>The Unlabeled Dials</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:720px; margin:0 auto; padding:52px 24px 72px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px; }
+  h1{ font-size:clamp(34px,7vw,50px); margin:0 0 18px; font-weight:700; text-wrap:balance; line-height:1.05; }
+  .dek{ font-size:18px; color:var(--ink-dim); max-width:56ch; line-height:1.6; margin:0 0 44px; }
+
+  section{ margin:0 0 48px; }
+  .stepnum{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--ink-dim); font-family:var(--mono); font-size:14px; margin-bottom:12px; }
+  .stepnum.no{ border-color:var(--flag); color:var(--flag); }
+  h2{ font-size:26px; margin:0 0 14px; font-weight:700; line-height:1.2; }
+  p{ font-size:17px; line-height:1.65; margin:0 0 16px; max-width:58ch; }
+  p strong{ color:var(--ink); }
+  .analogy{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:18px 22px; font-size:16px; line-height:1.6; color:var(--ink-dim); margin:18px 0; }
+  .analogy b{ color:var(--ink); }
+
+  .lgrid{ display:grid; grid-template-columns:repeat(10,1fr); gap:5px; margin:20px 0; }
+  .lcell{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:6px; padding:8px 2px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .lch{ font-family:var(--mono); font-size:15px; font-weight:600; }
+  .lid{ font-family:var(--mono); font-size:9px; color:var(--ink-dim); }
+
+  .dialstrip{ display:grid; grid-template-columns:repeat(32,1fr); gap:2px; margin:20px 0; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; padding:8px; background:var(--paper-raised); }
+  .dcell{ aspect-ratio:1; border-radius:2px; }
+
+  .numrow{ display:flex; gap:12px; flex-wrap:wrap; margin:20px 0; }
+  .numcard{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:14px 18px; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:90px; }
+  .numval{ font-family:var(--mono); font-size:14px; color:var(--ink); }
+  .numq{ font-size:22px; font-weight:700; color:var(--flag); }
+
+  .punchline{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:28px 30px; margin-top:12px; }
+  .punchline h2{ margin-bottom:12px; }
+  .punchline p{ font-size:17px; max-width:none; }
+  .punchline p:last-child{ margin-bottom:0; }
+
+  @media (max-width:560px){
+    .page{ padding:36px 16px 56px; }
+    .lgrid{ grid-template-columns:repeat(6,1fr); }
+    .dialstrip{ grid-template-columns:repeat(16,1fr); }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">A plain-language explainer</p>
+  <h1>The Unlabeled Dials</h1>
+  <p class="dek">We built a tiny AI that writes a little like Shakespeare. Here's a simple, honest way to see why we can watch it work &mdash; but still can't tell you what it's "thinking."</p>
+
+  <section>
+    <div class="stepnum">1</div>
+    <h2>A list we wrote ourselves</h2>
+    <p>Before our AI can read anything, it has to turn letters into numbers &mdash; that's just how the math works. So we made it a list: <strong>R is 30. O is 27. M is 25.</strong> And so on, for every letter, space, and punctuation mark it knows &mdash; 65 in total.</p>
+    <p>Here's the whole list. Every single entry:</p>
+    <div class="lgrid">
+      <div class="lcell"><span class="lch">\n</span><span class="lid">0</span></div>
+      <div class="lcell"><span class="lch">␣</span><span class="lid">1</span></div>
+      <div class="lcell"><span class="lch">!</span><span class="lid">2</span></div>
+      <div class="lcell"><span class="lch">$</span><span class="lid">3</span></div>
+      <div class="lcell"><span class="lch">&</span><span class="lid">4</span></div>
+      <div class="lcell"><span class="lch">'</span><span class="lid">5</span></div>
+      <div class="lcell"><span class="lch">,</span><span class="lid">6</span></div>
+      <div class="lcell"><span class="lch">-</span><span class="lid">7</span></div>
+      <div class="lcell"><span class="lch">.</span><span class="lid">8</span></div>
+      <div class="lcell"><span class="lch">3</span><span class="lid">9</span></div>
+      <div class="lcell"><span class="lch">:</span><span class="lid">10</span></div>
+      <div class="lcell"><span class="lch">;</span><span class="lid">11</span></div>
+      <div class="lcell"><span class="lch">?</span><span class="lid">12</span></div>
+      <div class="lcell"><span class="lch">A</span><span class="lid">13</span></div>
+      <div class="lcell"><span class="lch">B</span><span class="lid">14</span></div>
+      <div class="lcell"><span class="lch">C</span><span class="lid">15</span></div>
+      <div class="lcell"><span class="lch">D</span><span class="lid">16</span></div>
+      <div class="lcell"><span class="lch">E</span><span class="lid">17</span></div>
+      <div class="lcell"><span class="lch">F</span><span class="lid">18</span></div>
+      <div class="lcell"><span class="lch">G</span><span class="lid">19</span></div>
+      <div class="lcell"><span class="lch">H</span><span class="lid">20</span></div>
+      <div class="lcell"><span class="lch">I</span><span class="lid">21</span></div>
+      <div class="lcell"><span class="lch">J</span><span class="lid">22</span></div>
+      <div class="lcell"><span class="lch">K</span><span class="lid">23</span></div>
+      <div class="lcell"><span class="lch">L</span><span class="lid">24</span></div>
+      <div class="lcell"><span class="lch">M</span><span class="lid">25</span></div>
+      <div class="lcell"><span class="lch">N</span><span class="lid">26</span></div>
+      <div class="lcell"><span class="lch">O</span><span class="lid">27</span></div>
+      <div class="lcell"><span class="lch">P</span><span class="lid">28</span></div>
+      <div class="lcell"><span class="lch">Q</span><span class="lid">29</span></div>
+      <div class="lcell"><span class="lch">R</span><span class="lid">30</span></div>
+      <div class="lcell"><span class="lch">S</span><span class="lid">31</span></div>
+      <div class="lcell"><span class="lch">T</span><span class="lid">32</span></div>
+      <div class="lcell"><span class="lch">U</span><span class="lid">33</span></div>
+      <div class="lcell"><span class="lch">V</span><span class="lid">34</span></div>
+      <div class="lcell"><span class="lch">W</span><span class="lid">35</span></div>
+      <div class="lcell"><span class="lch">X</span><span class="lid">36</span></div>
+      <div class="lcell"><span class="lch">Y</span><span class="lid">37</span></div>
+      <div class="lcell"><span class="lch">Z</span><span class="lid">38</span></div>
+      <div class="lcell"><span class="lch">a</span><span class="lid">39</span></div>
+      <div class="lcell"><span class="lch">b</span><span class="lid">40</span></div>
+      <div class="lcell"><span class="lch">c</span><span class="lid">41</span></div>
+      <div class="lcell"><span class="lch">d</span><span class="lid">42</span></div>
+      <div class="lcell"><span class="lch">e</span><span class="lid">43</span></div>
+      <div class="lcell"><span class="lch">f</span><span class="lid">44</span></div>
+      <div class="lcell"><span class="lch">g</span><span class="lid">45</span></div>
+      <div class="lcell"><span class="lch">h</span><span class="lid">46</span></div>
+      <div class="lcell"><span class="lch">i</span><span class="lid">47</span></div>
+      <div class="lcell"><span class="lch">j</span><span class="lid">48</span></div>
+      <div class="lcell"><span class="lch">k</span><span class="lid">49</span></div>
+      <div class="lcell"><span class="lch">l</span><span class="lid">50</span></div>
+      <div class="lcell"><span class="lch">m</span><span class="lid">51</span></div>
+      <div class="lcell"><span class="lch">n</span><span class="lid">52</span></div>
+      <div class="lcell"><span class="lch">o</span><span class="lid">53</span></div>
+      <div class="lcell"><span class="lch">p</span><span class="lid">54</span></div>
+      <div class="lcell"><span class="lch">q</span><span class="lid">55</span></div>
+      <div class="lcell"><span class="lch">r</span><span class="lid">56</span></div>
+      <div class="lcell"><span class="lch">s</span><span class="lid">57</span></div>
+      <div class="lcell"><span class="lch">t</span><span class="lid">58</span></div>
+      <div class="lcell"><span class="lch">u</span><span class="lid">59</span></div>
+      <div class="lcell"><span class="lch">v</span><span class="lid">60</span></div>
+      <div class="lcell"><span class="lch">w</span><span class="lid">61</span></div>
+      <div class="lcell"><span class="lch">x</span><span class="lid">62</span></div>
+      <div class="lcell"><span class="lch">y</span><span class="lid">63</span></div>
+      <div class="lcell"><span class="lch">z</span><span class="lid">64</span></div>
+    </div>
+    <p>This list is complete. We wrote it by hand before the AI ever read a word. If you see the number 30, you know for certain it means "R." No guessing, ever.</p>
+  </section>
+
+  <section>
+    <div class="stepnum no">2</div>
+    <h2>Numbers nobody wrote a list for</h2>
+    <p>Once the AI has your letters as numbers, it does an enormous amount of math on them. Some of that math produces this &mdash; 384 more numbers. These are <strong>real</strong>, taken from one real moment while our AI was reading the word "ROMEO:". Every square below is a genuine number, not a mockup:</p>
+    <div class="dialstrip">
+      <div class="dcell" style="background:var(--flag);opacity:0.665"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.531"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.666"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.157"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.541"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.495"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.204"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.448"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.536"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.351"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.233"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.323"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.231"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.564"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.229"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.217"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.537"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.376"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.218"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.204"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.266"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.407"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.380"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.440"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.299"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.317"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.228"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.400"></div>
+      <div class="dcell" style="background:var(--flag);opacity:1.000"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.165"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.284"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.246"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.261"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.432"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.465"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.320"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.211"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.215"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.296"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.399"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.540"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.279"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.391"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.278"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.662"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.586"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.191"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.454"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.469"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.257"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.283"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.281"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.288"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.538"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.181"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.231"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.348"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.550"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.368"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.385"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.161"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.262"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.383"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.247"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.387"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.284"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.316"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.385"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.558"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.453"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.184"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.217"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.364"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.359"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.248"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.166"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.611"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.598"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.497"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.676"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.230"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.522"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.500"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.247"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.448"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.712"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.176"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.233"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.379"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.296"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.281"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.592"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.385"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.197"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.419"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.237"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.213"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.218"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.292"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.675"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.415"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.534"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.513"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.277"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.521"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.187"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.189"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.277"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.189"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.355"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.161"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.162"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.292"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.305"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.684"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.210"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.393"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.160"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.391"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.368"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.515"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.423"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.184"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.232"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.412"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.362"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.605"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.472"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.220"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.163"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.332"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.216"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.293"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.566"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.306"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.516"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.412"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.636"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.187"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.177"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.361"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.303"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.325"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.382"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.521"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.536"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.333"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.810"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.445"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.647"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.444"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.328"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.241"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.251"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.290"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.360"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.191"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.218"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.176"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.292"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.192"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.657"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.158"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.198"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.210"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.189"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.612"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.352"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.183"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.245"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.154"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.171"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.181"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.498"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.175"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.284"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.261"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.423"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.467"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.252"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.603"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.289"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.171"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.273"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.449"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.255"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.389"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.403"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.285"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.327"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.217"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.445"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.280"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.290"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.377"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.244"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.371"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.405"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.209"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.226"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.325"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.223"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.156"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.204"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.383"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.212"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.285"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.234"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.428"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.200"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.244"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.204"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.192"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.157"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.582"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.456"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.294"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.233"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.191"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.219"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.312"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.169"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.209"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.320"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.446"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.300"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.253"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.256"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.412"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.438"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.273"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.215"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.612"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.298"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.203"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.192"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.445"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.230"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.363"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.498"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.526"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.159"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.170"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.261"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.253"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.350"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.575"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.287"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.255"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.458"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.471"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.374"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.366"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.269"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.433"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.202"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.253"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.243"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.206"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.483"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.167"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.445"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.302"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.174"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.487"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.209"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.177"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.348"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.210"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.304"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.289"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.220"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.253"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.395"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.350"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.360"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.238"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.190"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.552"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.335"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.692"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.249"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.317"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.395"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.237"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.287"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.433"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.269"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.380"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.360"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.238"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.312"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.339"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.266"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.320"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.291"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.304"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.264"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.257"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.258"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.213"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.253"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.274"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.305"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.215"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.469"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.462"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.183"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.262"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.163"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.393"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.272"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.283"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.333"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.156"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.380"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.564"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.575"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.204"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.484"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.167"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.540"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.261"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.395"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.485"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.277"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.156"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.226"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.386"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.269"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.401"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.359"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.351"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.360"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.416"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.353"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.668"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.572"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.556"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.374"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.176"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.695"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.221"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.315"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.451"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.903"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.329"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.192"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.241"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.187"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.413"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.299"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.174"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.314"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.408"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.374"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.542"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.187"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.216"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.310"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.163"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.268"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.201"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.295"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.348"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.455"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.524"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.535"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.563"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.557"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.169"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.203"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.533"></div>
+      <div class="dcell" style="background:var(--accent);opacity:0.185"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.382"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.381"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.211"></div>
+      <div class="dcell" style="background:var(--flag);opacity:0.306"></div>
+    </div>
+    <p>Here are five of those exact numbers, up close:</p>
+    <div class="numrow">
+      <div class="numcard"><span class="numval">-0.102</span><span class="numq">?</span></div>
+      <div class="numcard"><span class="numval">-0.742</span><span class="numq">?</span></div>
+      <div class="numcard"><span class="numval">-0.390</span><span class="numq">?</span></div>
+      <div class="numcard"><span class="numval">-0.500</span><span class="numq">?</span></div>
+      <div class="numcard"><span class="numval">-0.269</span><span class="numq">?</span></div>
+    </div>
+    <p>Now here's the difference from step one: <strong>nobody wrote a list for these.</strong> There's no page, anywhere, that says "number 6 means the AI is thinking about kings." Not because it's secret or hidden from us &mdash; that page was simply never written, by us or by anyone who builds AI like this. It didn't need to exist for the AI to work.</p>
+    <div class="analogy">Imagine a soundboard covered in 384 sliders. While a song plays, you can watch every slider move up and down &mdash; real, visible motion. But none of them has a label. You can't tell which one is the drums, which is the volume, or whether any of them mean something a person would recognize at all. <b>You're watching real movement. You are not watching an explanation.</b></div>
+  </section>
+
+  <div class="punchline">
+    <h2>So what does "monitoring an AI think" actually mean?</h2>
+    <p>People &mdash; including us, earlier in this project &mdash; sometimes talk about "watching an AI reason." What we can really watch is <strong>step one</strong>: the letters going in, and the letters coming out. That part has a real, complete list, so we can honestly say what it means.</p>
+    <p><strong>Step two is the part people usually mean by "thinking."</strong> And for step two, we can watch the numbers appear, in real time, completely honestly &mdash; we just showed you 384 real ones. We simply can't tell you what any of them mean, because that list doesn't exist yet. Not for our tiny AI, and not for the giant ones either.</p>
+  </div>
+</div>

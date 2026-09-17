@@ -1,0 +1,255 @@
+<title>The Model Lifecycle</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:820px; margin:0 auto; padding:52px 24px 76px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px; }
+  h1{ font-size:clamp(34px,7vw,50px); margin:0 0 18px; font-weight:700; text-wrap:balance; line-height:1.05; }
+  .dek{ font-size:17px; color:var(--ink-dim); max-width:64ch; line-height:1.6; margin:0 0 8px; }
+  .dek strong{ color:var(--ink); }
+
+  figure{ margin:32px 0 44px; }
+  .diagram-wrap{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:16px; padding:12px; }
+  svg{ display:block; width:100%; height:auto; }
+  figcaption{ font-size:13px; color:var(--ink-dim); margin-top:12px; line-height:1.5; text-align:center; }
+
+  .legend{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; font-size:12.5px; color:var(--ink-dim); margin:14px 0 0; }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+
+  .stage{ display:grid; grid-template-columns:44px 1fr; gap:16px; padding:22px 0; border-top:1px solid var(--line); }
+  .stage:first-of-type{ border-top:1px solid var(--line-strong); }
+  .stage .n{ display:flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--ink-dim); font-family:var(--mono); font-size:15px; }
+  .stage.gap .n{ border-style:dashed; border-color:var(--flag); color:var(--flag); }
+  .stage.hot .n{ border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+  .stage h2{ font-size:20px; margin:0 0 4px; font-weight:700; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .sdlc{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:5px; padding:2px 8px; }
+  .stage p{ font-size:15px; line-height:1.6; margin:6px 0 10px; max-width:60ch; }
+  .links{ display:flex; flex-wrap:wrap; gap:8px 16px; }
+  .links a{ font-size:13px; color:var(--accent); text-decoration:none; }
+  .links a:hover{ text-decoration:underline; }
+  .gapnote{ font-size:13.5px; color:var(--flag); background:var(--flag-soft); border:1px dashed var(--flag); border-radius:8px; padding:8px 12px; display:inline-block; }
+
+  .punchline{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:26px 28px; margin-top:20px; }
+  .punchline h2{ margin:0 0 10px; font-size:20px; }
+  .punchline p{ font-size:15.5px; line-height:1.6; margin:0; max-width:none; }
+
+  @media (max-width:560px){
+    .page{ padding:36px 16px 56px; }
+    .stage{ grid-template-columns:36px 1fr; gap:12px; }
+    .stage .n{ width:36px; height:36px; font-size:13px; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">The AI model development lifecycle</p>
+  <h1>The Model Lifecycle</h1>
+  <p class="dek">It's the SDLC &mdash; same nine-phase loop, same reason it's drawn as a circle and not a line. The labels change (Data instead of Analysis, Train instead of Implementation), but the shape is identical: plan, build, ship, watch, and feed what you learn back into the next pass.</p>
+  <p class="dek">Every stage below links to where this project actually did it &mdash; and names honestly the two stages it didn't.</p>
+
+  <figure>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 700 700" role="img" aria-label="A nine-stage circular lifecycle diagram: Plan, Data, Design, Train, Evaluate, Package, Deploy, Monitor, and Iterate, arranged clockwise in a loop, with the Iterate-to-Plan arrow highlighted to show the loop feeding back into itself.">
+        <defs>
+          <marker id="lc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <circle cx="350" cy="350" r="260" fill="none" stroke="var(--line)" stroke-width="1"/>
+
+        <g stroke="var(--ink-dim)" stroke-width="2" fill="none" marker-end="url(#lc-arrow)" color="var(--ink-dim)">
+          <path d="M393.2,105.7 L473.9,135.1"/>
+          <path d="M540.1,190.6 L583.1,265.1"/>
+          <path d="M598.1,350.2 L583.2,434.7"/>
+          <path d="M540.0,509.6 L474.1,564.7"/>
+          <path d="M392.9,594.3 L307.1,594.3"/>
+          <path d="M225.9,564.7 L160.0,509.6"/>
+          <path d="M116.8,434.7 L101.9,350.2"/>
+          <path d="M116.9,265.1 L159.9,190.6"/>
+        </g>
+        <g stroke="var(--accent)" stroke-width="2.5" fill="none" stroke-dasharray="7 5" marker-end="url(#lc-arrow)" color="var(--accent)">
+          <path d="M226.1,135.1 L306.8,105.7"/>
+        </g>
+        <text x="266" y="90" font-family="IBM Plex Sans Condensed" font-size="12" fill="var(--accent)" text-anchor="middle">feeds back in</text>
+
+        <!-- Plan (honest gap) -->
+        <g transform="translate(350,90)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--flag)" stroke-width="2" stroke-dasharray="5 4"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Plan</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Requirements</text>
+        </g>
+        <!-- Data -->
+        <g transform="translate(517.1,150.8)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="2"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Data</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Analysis</text>
+        </g>
+        <!-- Design -->
+        <g transform="translate(606.1,304.9)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="2"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Design</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Design</text>
+        </g>
+        <!-- Train -->
+        <g transform="translate(575.2,480)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="2"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Train</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Implementation</text>
+        </g>
+        <!-- Evaluate -->
+        <g transform="translate(438.9,594.3)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="2"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Evaluate</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Testing</text>
+        </g>
+        <!-- Package -->
+        <g transform="translate(261.1,594.3)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="2"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Package</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Build</text>
+        </g>
+        <!-- Deploy -->
+        <g transform="translate(124.8,480)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="2"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Deploy</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Release</text>
+        </g>
+        <!-- Monitor (hot) -->
+        <g transform="translate(93.9,304.9)">
+          <circle r="50" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--accent)">Monitor</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--accent)">Operate</text>
+        </g>
+        <!-- Iterate (honest gap) -->
+        <g transform="translate(182.9,150.8)">
+          <circle r="46" fill="var(--paper-raised)" stroke="var(--flag)" stroke-width="2" stroke-dasharray="5 4"/>
+          <text text-anchor="middle" dy="-4" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">Iterate</text>
+          <text text-anchor="middle" dy="13" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">Maintain</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Nine stages, same loop the SDLC draws &mdash; only the far-left node (Monitor) is where almost this entire project actually lives. The two dashed nodes are named honestly below as gaps, not covered by a dedicated page.</figcaption>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--ink-dim)"></span>covered by real work in this project</span>
+      <span><span class="dot" style="background:var(--accent)"></span>where most of this project's work happened</span>
+      <span><span class="dot" style="background:var(--flag)"></span>honest gap &mdash; not covered</span>
+    </div>
+  </figure>
+
+  <div class="stage gap">
+    <div class="n">1</div>
+    <div>
+      <h2>Plan <span class="sdlc">SDLC: Requirements</span></h2>
+      <p>Decide what to build and why &mdash; in our case, a model from scratch, on one machine, specifically so every later stage would be inspectable rather than a black box.</p>
+      <span class="gapnote">Honest gap: this stage has no dedicated page. It's the conversation that started everything else, not an artifact.</span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="n">2</div>
+    <div>
+      <h2>Data <span class="sdlc">SDLC: Analysis</span></h2>
+      <p>Gather and understand what the model will actually learn from &mdash; 40,000 lines of real Shakespeare, and the 65-symbol dictionary built directly from it.</p>
+      <div class="links"><a href="../pipeline-diagram.html">Byte-Level Bard &rarr;</a><a href="getting_less_wrong.html">Getting Less Wrong &rarr;</a></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="n">3</div>
+    <div>
+      <h2>Design <span class="sdlc">SDLC: Design</span></h2>
+      <p>Choose the architecture: token + position embeddings, six attention blocks, a final projection to logits &mdash; the actual equations behind every layer.</p>
+      <div class="links"><a href="../pipeline-diagram.html">Byte-Level Bard &rarr;</a><a href="look_at_the_maths.html">Look at the Maths &rarr;</a></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="n">4</div>
+    <div>
+      <h2>Train <span class="sdlc">SDLC: Implementation</span></h2>
+      <p>Run the actual training loop: 5,000 real steps, loss falling from 4.2886 to 0.9795, on one GPU.</p>
+      <div class="links"><a href="getting_less_wrong.html">Getting Less Wrong &rarr;</a></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="n">5</div>
+    <div>
+      <h2>Evaluate <span class="sdlc">SDLC: Testing</span></h2>
+      <p>Sample real output, check it against held-out text. Testing caught a real defect here: validation loss stopped improving around step 3,750 while training loss kept falling &mdash; the model had started memorizing, not generalizing.</p>
+      <div class="links"><a href="the_journey.html">The Journey &rarr;</a><a href="the_whole_story.html">The Whole Story &rarr;</a></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="n">6</div>
+    <div>
+      <h2>Package <span class="sdlc">SDLC: Build</span></h2>
+      <p>Convert the trained checkpoint into a format something else can run &mdash; GGUF, hand-mapped tensor by tensor. Two real bugs surfaced and got fixed here.</p>
+      <div class="links"><a href="../pipeline-diagram.html">Byte-Level Bard &rarr;</a></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="n">7</div>
+    <div>
+      <h2>Deploy <span class="sdlc">SDLC: Release</span></h2>
+      <p>Ship it somewhere it can actually be run &mdash; a three-line Modelfile, <code>ollama create</code>, and it behaves like any other local model.</p>
+      <div class="links"><a href="../pipeline-diagram.html">Byte-Level Bard &rarr;</a></div>
+    </div>
+  </div>
+
+  <div class="stage hot">
+    <div class="n">8</div>
+    <div>
+      <h2>Monitor <span class="sdlc">SDLC: Operate</span></h2>
+      <p>Watch what the running model is actually doing &mdash; and this is where almost this entire project lives. Real computation graphs, real GPU kernels, real sampling probabilities, real gaps named honestly where nothing readable exists.</p>
+      <div class="links">
+        <a href="graph_trace.html">Live Computation Graph &rarr;</a>
+        <a href="ggml_graph.html">tiny-shakespeare Graph &rarr;</a>
+        <a href="gpu_trace.html">GPU Kernel Trace &rarr;</a>
+        <a href="sampling_tree.html">Sampling Tree &rarr;</a>
+        <a href="the_missing_index.html">The Missing Index &rarr;</a>
+        <a href="the_unlabeled_dials.html">The Unlabeled Dials &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage gap">
+    <div class="n">9</div>
+    <div>
+      <h2>Iterate <span class="sdlc">SDLC: Maintain</span></h2>
+      <p>Take what monitoring revealed and feed it back into the next pass &mdash; here, that would mean retraining with early stopping around step 3,750, or fixing the dropped <code>lm_head</code> bias from the GGUF conversion.</p>
+      <span class="gapnote">Honest gap: we found real, fixable issues at the Evaluate and Package stages and never closed the loop by retraining. That's the natural next step, not yet taken.</span>
+    </div>
+  </div>
+
+  <div class="punchline">
+    <h2>Why draw it as a loop, not a line</h2>
+    <p>The SDLC stopped being drawn as a straight line decades ago for the same reason this diagram is a circle: <strong>Monitor isn't the end.</strong> What it reveals &mdash; a real overfitting point, a real dropped bias term &mdash; is supposed to feed back into Data and Train for the next pass. This project walked eight of the nine stages for real. The ninth, Iterate, is exactly the honest, named gap that's left.</p>
+  </div>
+</div>

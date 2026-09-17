@@ -1,0 +1,170 @@
+<title>The Larger Journey</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:780px; margin:0 auto; padding:48px 24px 64px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(32px,6vw,46px); margin:0 0 14px; font-weight:700; text-wrap:balance; }
+  .dek{ font-size:15.5px; color:var(--ink-dim); max-width:62ch; line-height:1.65; margin:0 0 30px; }
+
+  .stage{ position:relative; padding:34px 0 34px 40px; border-left:2px solid var(--line-strong); margin-left:14px; }
+  .stage:last-of-type{ border-left:2px solid transparent; }
+  .stage::before{
+    content: attr(data-n); position:absolute; left:-15px; top:34px; width:28px; height:28px;
+    border-radius:50%; background:var(--paper); border:2px solid var(--ink-dim); color:var(--ink);
+    font-family:var(--mono); font-size:12px; display:flex; align-items:center; justify-content:center;
+  }
+  .stage h2{ font-size:21px; margin:0 0 8px; font-weight:700; }
+  .stage .role{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  .stage p{ font-size:14.5px; line-height:1.65; margin:0 0 14px; max-width:60ch; }
+  .stage p code{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:0 3px; border-radius:3px; }
+
+  .idrow{ display:flex; gap:8px; flex-wrap:wrap; margin:14px 0; }
+  .idbox2{ font-family:var(--mono); font-size:13px; background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:6px; padding:6px 12px; }
+
+  .opspine{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:4px 0; margin:14px 0; }
+  .oprow{ display:grid; grid-template-columns:34px 200px 1fr; gap:10px; align-items:center; padding:6px 16px; font-family:var(--mono); font-size:12px; border-top:1px solid var(--line); }
+  .oprow:first-child{ border-top:none; }
+  .oprow .n{ color:var(--ink-dim); }
+  .oprow .op{ display:inline-block; font-size:10.5px; background:var(--accent-soft); color:var(--accent); border-radius:4px; padding:1px 6px; font-weight:600; width:fit-content; }
+  .oprow .detail{ color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .oprow.skip{ display:block; color:var(--ink-dim); font-family:var(--sans); font-style:italic; font-size:12.5px; line-height:1.6; padding:8px 16px; }
+
+  .probbars{ margin:14px 0; }
+  .probrow{ display:grid; grid-template-columns:90px 1fr 70px; align-items:center; gap:10px; padding:4px 0; }
+  .probrow .ch{ font-family:var(--mono); font-size:13px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .probtrack{ background:var(--line); border-radius:3px; height:14px; overflow:hidden; }
+  .probfill{ background:var(--accent); height:100%; }
+  .probpct{ font-family:var(--mono); font-size:11.5px; text-align:right; color:var(--ink-dim); }
+
+  .outcome{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:8px; padding:12px 16px; font-size:14px; margin:14px 0; }
+  .outcome strong{ font-family:var(--mono); }
+  .honest{ background:var(--paper-raised); border:1px dashed var(--line-strong); border-radius:8px; padding:12px 16px; font-size:13.5px; line-height:1.6; color:var(--ink-dim); margin:14px 0; }
+
+  .excerpt{ margin:14px 0; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:14px 18px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:13.5px; line-height:1.75; white-space:pre-wrap; }
+  .excerpt .src{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); display:block; margin-bottom:6px; }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
+  .split-col{ border-radius:10px; padding:16px 18px; font-size:13.5px; line-height:1.6; }
+  .split-col.yes{ background:var(--accent-soft); border:1px solid var(--accent); }
+  .split-col.no{ background:var(--flag-soft); border:1px solid var(--flag); }
+  .split-col h3{ font-size:13px; margin:0 0 8px; font-family:var(--cond); letter-spacing:0.05em; text-transform:uppercase; }
+  .split-col.yes h3{ color:var(--accent); }
+  .split-col.no h3{ color:var(--flag); }
+
+  .linkout{ margin-top:34px; }
+  .linkout h2{ font-size:13px; font-family:var(--cond); letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 14px; }
+  .linkrow{ display:flex; flex-direction:column; gap:8px; }
+  .linkrow a{ color:var(--ink); text-decoration:none; font-size:14px; border-bottom:1px solid var(--line-strong); padding-bottom:8px; }
+  .linkrow a:hover{ color:var(--accent); }
+  .linkrow span{ display:block; color:var(--ink-dim); font-size:12.5px; margin-top:2px; }
+
+  @media (max-width:560px){
+    .page{ padding:32px 16px 48px; }
+    .stage{ padding-left:28px; margin-left:8px; }
+    .split{ grid-template-columns:1fr; }
+    .oprow{ grid-template-columns:26px 130px 1fr; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">One prompt, start to finish &mdash; deepseek-r1:8b</p>
+  <h1>The Larger Journey</h1>
+  <p class="dek">The same story as <a href="https://claude.ai/code/artifact/d7567cc7-55fc-4c71-a8ef-29d143512365" style="color:var(--ink);">The Journey</a>, told for an 8-billion-parameter model we don't own the weights of. Prompt: <code>"The capital of France is"</code>. Every number below is real &mdash; captured across two separate traces of the same prompt &mdash; and one gap is named honestly where the data genuinely runs out.</p>
+
+  <div class="stage" data-n="1">
+    <p class="role">Prompt &rarr; tokens</p>
+    <h2>Tokenization</h2>
+    <p>llama.cpp's own <code>eval-callback</code>, run natively via WSL against Ollama's downloaded weights, printed the real input token ids before doing anything else:</p>
+    <div class="idrow">
+      <span class="idbox2">785</span><span class="idbox2">6722</span><span class="idbox2">315</span><span class="idbox2">9625</span><span class="idbox2">374</span>
+    </div>
+    <div class="honest">Honest gap: unlike tiny-shakespeare's tokenizer (65 entries, built by us, a trivial lookup), this is Qwen2's trained BPE vocabulary &mdash; 151,936 entries. We don't have that vocab file loaded locally, so we can't decode these 5 ids back to their exact subword strings here. We do know what this kind of token looks like from elsewhere in this project: a space becomes <code>Ġ</code>, a newline becomes <code>Ċ</code>, and whole words like <code>" problem"</code> can be a single token &mdash; boundaries a trained vocabulary chooses, not ones a person would draw by hand.</div>
+  </div>
+
+  <div class="stage" data-n="2">
+    <p class="role">Tokens &rarr; logits</p>
+    <h2>The forward pass</h2>
+    <p>Same method as tiny-shakespeare: the real <code>ggml</code> op graph, captured by running <code>eval-callback</code> against this exact prompt on the actual downloaded weights. 1,266 real operations fire across 36 layers &mdash; over six times tiny-shakespeare's depth. The spine:</p>
+    <div class="opspine">
+      <div class="oprow"><span class="n">1</span><span class="op">GET_ROWS</span><span class="detail">token_embd.weight[4096,151936] &rarr; embd[4096,5]</span></div>
+      <div class="oprow"><span class="n">2</span><span class="op">RMS_NORM</span><span class="detail">embd &rarr; norm-0[4096,5]</span></div>
+      <div class="oprow skip">&hellip; 36 transformer blocks, ~35 ops each: RMS_NORM &rarr; Q/K/V MUL_MAT &rarr; per-head Q-norm &amp; K-norm &rarr; ROPE (rotary position) &rarr; FLASH_ATTN_EXT &rarr; attn_output &rarr; residual ADD &rarr; RMS_NORM &rarr; SwiGLU feed-forward &rarr; residual ADD &hellip;</div>
+      <div class="oprow"><span class="n">1265</span><span class="op">RMS_NORM</span><span class="detail">&times; output_norm &rarr; result_norm[4096,1]</span></div>
+      <div class="oprow"><span class="n">1266</span><span class="op">MUL_MAT</span><span class="detail">output.weight[4096,151936] &rarr; result_output[151936,1]</span></div>
+    </div>
+    <p style="margin-bottom:0;">Op 1266: 151,936 real numbers &mdash; one per vocabulary entry, versus tiny-shakespeare's 65. Same kind of number, same kind of op, 2337&times; the vocabulary to score.</p>
+  </div>
+
+  <div class="stage" data-n="3">
+    <p class="role">Logits &rarr; a token</p>
+    <h2>Softmax, then a roll</h2>
+    <p>A second, separate trace &mdash; this time through Ollama's own API with <code>logprobs</code> requested &mdash; captured the real softmax output for this exact prompt. The top candidate for the very first generated token:</p>
+    <div class="probbars">
+      <div class="probrow"><span class="ch">&lt;think&gt;</span><div class="probtrack"><div class="probfill" style="width:100%"></div></div><span class="probpct">100.000%</span></div>
+      <div class="probrow"><span class="ch">Assistant</span><div class="probtrack"><div class="probfill" style="width:0%"></div></div><span class="probpct">0.000%</span></div>
+      <div class="probrow"><span class="ch">же</span><div class="probtrack"><div class="probfill" style="width:0%"></div></div><span class="probpct">0.000%</span></div>
+    </div>
+    <div class="outcome">Even more one-sided than tiny-shakespeare's 99.996%. This model was RL-trained to always open with <code>&lt;think&gt;</code> &mdash; a stronger behavioral constraint than tiny-shakespeare's statistical pattern, but mechanically identical: a token in a fixed vocabulary, scored by softmax, drawn by the same sampler.</div>
+  </div>
+
+  <div class="stage" data-n="4">
+    <p class="role">Repeat, 58 more times</p>
+    <h2>The output accumulates</h2>
+    <p>Same pipeline, run again for each new token. The real text this call produced:</p>
+    <div class="excerpt"><span class="src">token span Ollama's API labels <code>message.reasoning</code></span><pre>&lt;think&gt;Okay, the user is asking for the capital of France. Let me start by recalling the basic facts. I know Paris is the capital, but I should double-check to be sure. Right, it's definitely Paris. Now, I need to think about why the user is asking this.</pre></div>
+    <div class="honest">Honest result, not a cherry-pick: none of these 59 tokens were a long-shot draw &mdash; every single one was the sampler's top-ranked candidate. Contrast with tiny-shakespeare's 4 long-shot draws in 40 steps. That doesn't mean this model never takes one &mdash; <a href="https://claude.ai/code/artifact/1dd3b94f-c5bb-4cbc-8d25-99942c3bf43c" style="color:var(--ink);">The Sheep Riddle</a>, traced earlier in this project, catches it choosing <code>'b'</code> at 3.6% mid-sentence. This window just happened not to.</div>
+  </div>
+
+  <div class="stage" data-n="5">
+    <p class="role">What this explains</p>
+    <h2>Mechanistic why vs. semantic why</h2>
+    <p>The same split as tiny-shakespeare's journey, holding at 15x the scale. We can say exactly why <code>&lt;think&gt;</code> opened this response: a real forward pass produced real logits, softmax turned them into a 100.000% probability, and the sampler drew it. We cannot say why the trained weights represent "this looks like a question I should reason about" in any conceptual sense &mdash; and the one honest gap above (unreadable token ids) is a small preview of a much larger one: at 4096 hidden dimensions and 36 layers, there is far more happening per token than at tiny-shakespeare's 384 and 6.</p>
+    <div class="split">
+      <div class="split-col yes">
+        <h3>Answered here</h3>
+        Every stage has real, cited numbers: the 5 input token ids, all 1,266 real ops, the exact top-token probability, the exact 59-token output. The <code>&lt;think&gt;</code> tag is not a separate mechanism &mdash; it is one entry in the same fixed vocabulary as every other token, sampled the same way.
+      </div>
+      <div class="split-col no">
+        <h3>Not answered here</h3>
+        What any of the 4096-dimensional hidden states represent. Why this model was trained to reach for reasoning tokens at all. Those require interpreting the weights, not tracing the computation &mdash; unsolved for this model exactly as for tiny-shakespeare, just at far higher dimension.
+      </div>
+    </div>
+  </div>
+
+  <div class="linkout">
+    <h2>The pieces this journey is built from</h2>
+    <div class="linkrow">
+      <a href="https://claude.ai/code/artifact/6b32fc9c-7d02-4769-85a7-870ca7b42c0c">deepseek-r1:8b Graph &rarr;<span>All 1,266 real ggml ops captured from this model's weights, in full.</span></a>
+      <a href="https://claude.ai/code/artifact/1dd3b94f-c5bb-4cbc-8d25-99942c3bf43c">The Sheep Riddle &rarr;<span>A different prompt, traced the same way &mdash; where a long-shot draw actually happens.</span></a>
+      <a href="https://claude.ai/code/artifact/e8a03789-4e64-4b89-bd3c-3fefb2904bc1">GPU Kernel Trace &rarr;<span>The same class of ops above, as real CUDA kernels with real hardware timing.</span></a>
+      <a href="https://claude.ai/code/artifact/d7567cc7-55fc-4c71-a8ef-29d143512365">The Journey &rarr;<span>The small-model original this page mirrors.</span></a>
+    </div>
+  </div>
+</div>

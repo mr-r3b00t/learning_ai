@@ -1,0 +1,179 @@
+<title>The Journey</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:780px; margin:0 auto; padding:48px 24px 64px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(32px,6vw,46px); margin:0 0 14px; font-weight:700; text-wrap:balance; }
+  .dek{ font-size:15.5px; color:var(--ink-dim); max-width:62ch; line-height:1.65; margin:0 0 30px; }
+
+  .stage{ position:relative; padding:34px 0 34px 40px; border-left:2px solid var(--line-strong); margin-left:14px; }
+  .stage:last-of-type{ border-left:2px solid transparent; }
+  .stage::before{
+    content: attr(data-n); position:absolute; left:-15px; top:34px; width:28px; height:28px;
+    border-radius:50%; background:var(--paper); border:2px solid var(--ink-dim); color:var(--ink);
+    font-family:var(--mono); font-size:12px; display:flex; align-items:center; justify-content:center;
+  }
+  .stage h2{ font-size:21px; margin:0 0 8px; font-weight:700; }
+  .stage .role{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  .stage p{ font-size:14.5px; line-height:1.65; margin:0 0 14px; max-width:60ch; }
+  .stage p code{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:0 3px; border-radius:3px; }
+
+  .charrow{ display:flex; gap:6px; flex-wrap:wrap; margin:14px 0; }
+  .charbox{ font-family:var(--mono); font-size:14px; background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:6px; padding:6px 0; width:34px; text-align:center; }
+  .idbox{ font-family:var(--mono); font-size:11px; color:var(--ink-dim); text-align:center; margin-top:3px; }
+  .charcol{ display:flex; flex-direction:column; align-items:center; }
+
+  .opspine{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:4px 0; margin:14px 0; }
+  .oprow{ display:grid; grid-template-columns:32px 130px 1fr; gap:10px; align-items:center; padding:6px 16px; font-family:var(--mono); font-size:12px; border-top:1px solid var(--line); }
+  .oprow:first-child{ border-top:none; }
+  .oprow .n{ color:var(--ink-dim); }
+  .oprow .op{ display:inline-block; font-size:10.5px; background:var(--accent-soft); color:var(--accent); border-radius:4px; padding:1px 6px; font-weight:600; width:fit-content; }
+  .oprow .detail{ color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .oprow.skip{ display:block; color:var(--ink-dim); font-family:var(--sans); font-style:italic; font-size:12.5px; line-height:1.6; padding:8px 16px; }
+
+  .probbars{ margin:14px 0; }
+  .probrow{ display:grid; grid-template-columns:44px 1fr 70px; align-items:center; gap:10px; padding:4px 0; }
+  .probrow .ch{ font-family:var(--mono); font-size:15px; text-align:center; }
+  .probtrack{ background:var(--line); border-radius:3px; height:14px; overflow:hidden; }
+  .probfill{ background:var(--accent); height:100%; }
+  .probfill.chosen{ background:var(--accent); }
+  .probpct{ font-family:var(--mono); font-size:11.5px; text-align:right; color:var(--ink-dim); }
+
+  .outcome{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:8px; padding:12px 16px; font-size:14px; margin:14px 0; }
+  .outcome strong{ font-family:var(--mono); }
+
+  .excerpt{ margin:14px 0; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:14px 18px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:14px; line-height:1.8; white-space:pre-wrap; }
+  .excerpt mark{ background:var(--flag-soft); color:var(--flag); border-radius:3px; padding:0 1px; font-weight:600; }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
+  .split-col{ border-radius:10px; padding:16px 18px; font-size:13.5px; line-height:1.6; }
+  .split-col.yes{ background:var(--accent-soft); border:1px solid var(--accent); }
+  .split-col.no{ background:var(--flag-soft); border:1px solid var(--flag); }
+  .split-col h3{ font-size:13px; margin:0 0 8px; font-family:var(--cond); letter-spacing:0.05em; text-transform:uppercase; }
+  .split-col.yes h3{ color:var(--accent); }
+  .split-col.no h3{ color:var(--flag); }
+
+  .linkout{ margin-top:34px; }
+  .linkout h2{ font-size:13px; font-family:var(--cond); letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 14px; }
+  .linkrow{ display:flex; flex-direction:column; gap:8px; }
+  .linkrow a{ color:var(--ink); text-decoration:none; font-size:14px; border-bottom:1px solid var(--line-strong); padding-bottom:8px; }
+  .linkrow a:hover{ color:var(--accent); }
+  .linkrow span{ display:block; color:var(--ink-dim); font-size:12.5px; margin-top:2px; }
+
+  @media (max-width:560px){
+    .page{ padding:32px 16px 48px; }
+    .stage{ padding-left:28px; margin-left:8px; }
+    .split{ grid-template-columns:1fr; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">One prompt, start to finish &mdash; tiny-shakespeare</p>
+  <h1>The Journey</h1>
+  <p class="dek">Every number below is real, captured from one actual run: the prompt <code>"ROMEO:"</code>, through the same 10.8M-parameter model this whole project traced piece by piece &mdash; tokenizer, real ggml ops, real GPU-adjacent computation, real sampling. Here it is stitched into one continuous story, ending with what this can and can't explain.</p>
+
+  <div class="stage" data-n="1">
+    <p class="role">Prompt &rarr; tokens</p>
+    <h2>Tokenization</h2>
+    <p>The prompt is six characters. <code>CharTokenizer</code> maps each one to its integer id via a fixed lookup table built from the training corpus &mdash; no ambiguity, no model involved yet.</p>
+    <div class="charrow">
+      <div class="charcol"><div class="charbox">R</div><div class="idbox">30</div></div>
+      <div class="charcol"><div class="charbox">O</div><div class="idbox">27</div></div>
+      <div class="charcol"><div class="charbox">M</div><div class="idbox">25</div></div>
+      <div class="charcol"><div class="charbox">E</div><div class="idbox">17</div></div>
+      <div class="charcol"><div class="charbox">O</div><div class="idbox">27</div></div>
+      <div class="charcol"><div class="charbox">:</div><div class="idbox">10</div></div>
+    </div>
+    <p style="margin-bottom:0;">Input to the model: <code>[30, 27, 25, 17, 27, 10]</code></p>
+  </div>
+
+  <div class="stage" data-n="2">
+    <p class="role">Tokens &rarr; logits</p>
+    <h2>The forward pass</h2>
+    <p>These six ids go through the real transformer &mdash; not a diagram of it, the literal <code>ggml</code> op graph captured by running <code>llama.cpp</code>'s own <code>eval-callback</code> tool against this exact prompt. 201 real operations fire; here is the spine of it, real shapes included:</p>
+    <div class="opspine">
+      <div class="oprow"><span class="n">1</span><span class="op">GET_ROWS</span><span class="detail">token_embd.weight[384,65] &rarr; embd[384,6]</span></div>
+      <div class="oprow"><span class="n">2</span><span class="op">GET_ROWS</span><span class="detail">position_embd.weight[384,256] &rarr; pos_embd[384,6]</span></div>
+      <div class="oprow"><span class="n">3</span><span class="op">ADD</span><span class="detail">embd + pos_embd &rarr; inpL[384,6]</span></div>
+      <div class="oprow skip">&hellip; 6 transformer blocks, 32 ops each: RMS_NORM &rarr; attn_qkv MUL_MAT &rarr; FLASH_ATTN_EXT &rarr; attn_output &rarr; residual ADD &rarr; RMS_NORM &rarr; ffn_up &rarr; SiLU &rarr; ffn_down &rarr; residual ADD &hellip;</div>
+      <div class="oprow"><span class="n">199</span><span class="op">MUL</span><span class="detail">norm &times; output_norm.weight</span></div>
+      <div class="oprow"><span class="n">200</span><span class="op">ADD</span><span class="detail">+ output_norm.bias &rarr; result_norm[384,1]</span></div>
+      <div class="oprow"><span class="n">201</span><span class="op">MUL_MAT</span><span class="detail">output.weight[384,65] &rarr; result_output[65,1]</span></div>
+    </div>
+    <p style="margin-bottom:0;">Op 201 is the end of the line: 65 real numbers, one per character in the vocabulary &mdash; the model's raw, unnormalized preferences for what comes next.</p>
+  </div>
+
+  <div class="stage" data-n="3">
+    <p class="role">Logits &rarr; a token</p>
+    <h2>Softmax, then a roll</h2>
+    <p>Those 65 logits pass through softmax, turning them into a real probability distribution. Here are the top 5 for what follows <code>"ROMEO:"</code>:</p>
+    <div class="probbars">
+      <div class="probrow"><span class="ch">\n</span><div class="probtrack"><div class="probfill chosen" style="width:100%"></div></div><span class="probpct">99.996%</span></div>
+      <div class="probrow"><span class="ch">Y</span><div class="probtrack"><div class="probfill" style="width:0.01%"></div></div><span class="probpct">0.001%</span></div>
+      <div class="probrow"><span class="ch">'</span><div class="probtrack"><div class="probfill" style="width:0.01%"></div></div><span class="probpct">0.001%</span></div>
+      <div class="probrow"><span class="ch">S</span><div class="probtrack"><div class="probfill" style="width:0.01%"></div></div><span class="probpct">0.001%</span></div>
+    </div>
+    <div class="outcome">A weighted random draw (seed 1337) landed on <strong>'\n'</strong> &mdash; unsurprising here, since it held 99.996% of the probability mass. That won't always be true.</div>
+  </div>
+
+  <div class="stage" data-n="4">
+    <p class="role">Repeat, 39 more times</p>
+    <h2>The output accumulates</h2>
+    <p>Each new character becomes part of the context for the next forward pass &mdash; same pipeline, run again. Most steps are as one-sided as step 0. Four were not: the sampler drew a character that wasn't even in the top 5 shown.</p>
+    <div class="excerpt"><pre>ROMEO:
+<mark>Y</mark>et <mark>b</mark>e not <mark>d</mark>esired to <mark>r</mark>epent me: and yo</pre></div>
+    <p style="margin-bottom:0;">Marked characters: real long-shot draws &mdash; <code>Y</code> at 3.1%, <code>b</code> at 3.6%, <code>d</code> at 2.7%, <code>r</code> at 3.2%. Nothing scripted; same mechanism as step 0, different outcome, because the draw fell in a different slice.</p>
+  </div>
+
+  <div class="stage" data-n="5">
+    <p class="role">What this explains</p>
+    <h2>Mechanistic why vs. semantic why</h2>
+    <p>The journey above is a complete, gapless causal chain for one specific fact: why <code>'\n'</code> followed <code>"ROMEO:"</code> in this run. That question has a real, fully-cited answer. A different question &mdash; why the weights encode a colon-then-newline pattern at all, what the 384-dimensional hidden state at each layer <em>represents</em> &mdash; does not.</p>
+    <div class="split">
+      <div class="split-col yes">
+        <h3>Answered here</h3>
+        Every number from prompt to output is accounted for: tokenization, all 201 real ops, the exact logits, the exact softmax probability, the exact sampled outcome. No step is inferred or assumed.
+      </div>
+      <div class="split-col no">
+        <h3>Not answered here</h3>
+        What the embedding, attention, or hidden-state vectors <em>mean</em> &mdash; why the trained weights produce this preference and not another. That's mechanistic interpretability: a live research problem, distinct from tracing the computation.
+      </div>
+    </div>
+  </div>
+
+  <div class="linkout">
+    <h2>The pieces this journey is built from</h2>
+    <div class="linkrow">
+      <a href="https://claude.ai/code/artifact/1c127c3c-f7e5-4ce6-a8a4-27d1f57be772">Live Computation Graph &rarr;<span>Module-level PyTorch trace of the same forward pass, via forward hooks.</span></a>
+      <a href="https://claude.ai/code/artifact/71ae73a7-fed1-418e-9ade-5dc1f342fe01">tiny-shakespeare Graph &rarr;<span>All 201 real ggml ops for this exact prompt, in full.</span></a>
+      <a href="https://claude.ai/code/artifact/a701f69e-66ac-469e-a17b-fa4b68f3fa0a">Sampling Tree &rarr;<span>All 40 generation steps as an interactive branching tree, every candidate and its real probability.</span></a>
+    </div>
+  </div>
+</div>

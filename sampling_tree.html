@@ -1,0 +1,173 @@
+<title>Sampling Tree</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:980px; margin:0 auto; padding:40px 24px 56px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; font-weight:700; text-wrap:balance; }
+  .sub{ font-size:14.5px; color:var(--ink-dim); max-width:68ch; line-height:1.6; margin:0 0 18px; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:16px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .excerpt{ margin:0 0 20px; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 16px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:13px; line-height:1.6; white-space:pre-wrap; }
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--ink-dim); }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .graph-wrap{ border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); overflow:hidden; }
+  #network{ width:100%; height:560px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 40px; } #network{ height:440px; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+
+<div class="page">
+  <p class="kicker">Token-by-token generation &mdash; tiny-shakespeare</p>
+  <h1>Sampling Tree</h1>
+  <p class="sub">Every branch is a character that received nonzero probability from the model's output distribution at that step, sized and colored by that probability. The copper path is the one the sampler actually drew &mdash; drag, scroll to zoom, hover any node for its exact probability.</p>
+  <dl class="meta" id="meta"></dl>
+  <div class="excerpt"><pre id="fulltext"></pre></div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span>sampled &mdash; was also the top-probability character</span>
+    <span><span class="dot" style="background:var(--flag)"></span>sampled &mdash; fell outside the shown top-k despite lower probability</span>
+    <span><span class="dot" style="background:var(--paper-raised);border:1px solid var(--line-strong)"></span>nonzero probability, not sampled</span>
+  </div>
+  <div class="graph-wrap"><div id="network"></div></div>
+  <figcaption>Built with vis-network from a real trace: at every step the model's full 65-character probability distribution was computed, its top candidates recorded, and the next character drawn by weighted random sampling &mdash; not scripted.</figcaption>
+</div>
+
+<script type="application/json" id="trace-data">{"timestamp": "2026-09-14T11:05:07", "prompt": "ROMEO:", "steps": 40, "topk": 5, "temperature": 0.8, "seed": 1337, "full_text": "ROMEO:\nYet be not desired to repent me: and yo", "trace": [{"step": 0, "context_tail": "ROMEO:", "candidates": [{"id": 0, "char": "\n", "prob": 0.99996, "char_disp": "\\n"}, {"id": 37, "char": "Y", "prob": 1e-05, "char_disp": "Y"}, {"id": 5, "char": "'", "prob": 1e-05, "char_disp": "'"}, {"id": 31, "char": "S", "prob": 1e-05, "char_disp": "S"}, {"id": 27, "char": "O", "prob": 0.0, "char_disp": "O"}], "chosen": {"id": 0, "char": "\n", "prob": 0.99996, "in_topk": true, "char_disp": "\\n"}}, {"step": 1, "context_tail": "ROMEO:\n", "candidates": [{"id": 35, "char": "W", "prob": 0.15863, "char_disp": "W"}, {"id": 13, "char": "A", "prob": 0.13491, "char_disp": "A"}, {"id": 32, "char": "T", "prob": 0.13459, "char_disp": "T"}, {"id": 27, "char": "O", "prob": 0.11373, "char_disp": "O"}, {"id": 21, "char": "I", "prob": 0.10497, "char_disp": "I"}], "chosen": {"id": 37, "char": "Y", "prob": 0.03109, "in_topk": false, "char_disp": "Y"}}, {"step": 2, "context_tail": "ROMEO:\nY", "candidates": [{"id": 53, "char": "o", "prob": 0.62144, "char_disp": "o"}, {"id": 43, "char": "e", "prob": 0.37051, "char_disp": "e"}, {"id": 47, "char": "i", "prob": 0.00591, "char_disp": "i"}, {"id": 39, "char": "a", "prob": 0.0017, "char_disp": "a"}, {"id": 63, "char": "y", "prob": 0.00023, "char_disp": "y"}], "chosen": {"id": 43, "char": "e", "prob": 0.37051, "in_topk": true, "char_disp": "e"}}, {"step": 3, "context_tail": "ROMEO:\nYe", "candidates": [{"id": 58, "char": "t", "prob": 0.88039, "char_disp": "t"}, {"id": 57, "char": "s", "prob": 0.0494, "char_disp": "s"}, {"id": 39, "char": "a", "prob": 0.04214, "char_disp": "a"}, {"id": 1, "char": " ", "prob": 0.02613, "char_disp": "\u2423"}, {"id": 52, "char": "n", "prob": 0.0007, "char_disp": "n"}], "chosen": {"id": 58, "char": "t", "prob": 0.88039, "in_topk": true, "char_disp": "t"}}, {"step": 4, "context_tail": "ROMEO:\nYet", "candidates": [{"id": 1, "char": " ", "prob": 0.81569, "char_disp": "\u2423"}, {"id": 6, "char": ",", "prob": 0.18307, "char_disp": ","}, {"id": 11, "char": ";", "prob": 0.00044, "char_disp": ";"}, {"id": 5, "char": "'", "prob": 0.00027, "char_disp": "'"}, {"id": 8, "char": ".", "prob": 0.00024, "char_disp": "."}], "chosen": {"id": 1, "char": " ", "prob": 0.81569, "in_topk": true, "char_disp": "\u2423"}}, {"step": 5, "context_tail": "ROMEO:\nYet ", "candidates": [{"id": 21, "char": "I", "prob": 0.22001, "char_disp": "I"}, {"id": 57, "char": "s", "prob": 0.19849, "char_disp": "s"}, {"id": 51, "char": "m", "prob": 0.11271, "char_disp": "m"}, {"id": 58, "char": "t", "prob": 0.05583, "char_disp": "t"}, {"id": 46, "char": "h", "prob": 0.05133, "char_disp": "h"}], "chosen": {"id": 40, "char": "b", "prob": 0.03604, "in_topk": false, "char_disp": "b"}}, {"step": 6, "context_tail": "ROMEO:\nYet b", "candidates": [{"id": 43, "char": "e", "prob": 0.62016, "char_disp": "e"}, {"id": 50, "char": "l", "prob": 0.29742, "char_disp": "l"}, {"id": 56, "char": "r", "prob": 0.02623, "char_disp": "r"}, {"id": 53, "char": "o", "prob": 0.01974, "char_disp": "o"}, {"id": 59, "char": "u", "prob": 0.01543, "char_disp": "u"}], "chosen": {"id": 43, "char": "e", "prob": 0.62016, "in_topk": true, "char_disp": "e"}}, {"step": 7, "context_tail": "OMEO:\nYet be", "candidates": [{"id": 1, "char": " ", "prob": 0.46538, "char_disp": "\u2423"}, {"id": 57, "char": "s", "prob": 0.29528, "char_disp": "s"}, {"id": 58, "char": "t", "prob": 0.112, "char_disp": "t"}, {"id": 39, "char": "a", "prob": 0.05679, "char_disp": "a"}, {"id": 47, "char": "i", "prob": 0.02284, "char_disp": "i"}], "chosen": {"id": 1, "char": " ", "prob": 0.46538, "in_topk": true, "char_disp": "\u2423"}}, {"step": 8, "context_tail": "MEO:\nYet be ", "candidates": [{"id": 57, "char": "s", "prob": 0.4088, "char_disp": "s"}, {"id": 52, "char": "n", "prob": 0.15486, "char_disp": "n"}, {"id": 58, "char": "t", "prob": 0.10588, "char_disp": "t"}, {"id": 51, "char": "m", "prob": 0.08185, "char_disp": "m"}, {"id": 39, "char": "a", "prob": 0.04544, "char_disp": "a"}], "chosen": {"id": 52, "char": "n", "prob": 0.15486, "in_topk": true, "char_disp": "n"}}, {"step": 9, "context_tail": "EO:\nYet be n", "candidates": [{"id": 53, "char": "o", "prob": 0.95999, "char_disp": "o"}, {"id": 43, "char": "e", "prob": 0.03873, "char_disp": "e"}, {"id": 39, "char": "a", "prob": 0.00092, "char_disp": "a"}, {"id": 47, "char": "i", "prob": 0.00023, "char_disp": "i"}, {"id": 59, "char": "u", "prob": 0.00012, "char_disp": "u"}], "chosen": {"id": 53, "char": "o", "prob": 0.95999, "in_topk": true, "char_disp": "o"}}, {"step": 10, "context_tail": "O:\nYet be no", "candidates": [{"id": 58, "char": "t", "prob": 0.93725, "char_disp": "t"}, {"id": 1, "char": " ", "prob": 0.04588, "char_disp": "\u2423"}, {"id": 52, "char": "n", "prob": 0.00969, "char_disp": "n"}, {"id": 61, "char": "w", "prob": 0.00571, "char_disp": "w"}, {"id": 40, "char": "b", "prob": 0.00103, "char_disp": "b"}], "chosen": {"id": 58, "char": "t", "prob": 0.93725, "in_topk": true, "char_disp": "t"}}, {"step": 11, "context_tail": ":\nYet be not", "candidates": [{"id": 1, "char": " ", "prob": 0.95169, "char_disp": "\u2423"}, {"id": 6, "char": ",", "prob": 0.04246, "char_disp": ","}, {"id": 46, "char": "h", "prob": 0.00189, "char_disp": "h"}, {"id": 11, "char": ";", "prob": 0.00154, "char_disp": ";"}, {"id": 8, "char": ".", "prob": 0.00143, "char_disp": "."}], "chosen": {"id": 1, "char": " ", "prob": 0.95169, "in_topk": true, "char_disp": "\u2423"}}, {"step": 12, "context_tail": "\nYet be not ", "candidates": [{"id": 57, "char": "s", "prob": 0.32654, "char_disp": "s"}, {"id": 58, "char": "t", "prob": 0.16566, "char_disp": "t"}, {"id": 40, "char": "b", "prob": 0.08984, "char_disp": "b"}, {"id": 51, "char": "m", "prob": 0.06535, "char_disp": "m"}, {"id": 39, "char": "a", "prob": 0.0633, "char_disp": "a"}], "chosen": {"id": 42, "char": "d", "prob": 0.02715, "in_topk": false, "char_disp": "d"}}, {"step": 13, "context_tail": "Yet be not d", "candidates": [{"id": 43, "char": "e", "prob": 0.36262, "char_disp": "e"}, {"id": 47, "char": "i", "prob": 0.23272, "char_disp": "i"}, {"id": 53, "char": "o", "prob": 0.22195, "char_disp": "o"}, {"id": 39, "char": "a", "prob": 0.09275, "char_disp": "a"}, {"id": 56, "char": "r", "prob": 0.08346, "char_disp": "r"}], "chosen": {"id": 43, "char": "e", "prob": 0.36262, "in_topk": true, "char_disp": "e"}}, {"step": 14, "context_tail": "et be not de", "candidates": [{"id": 57, "char": "s", "prob": 0.3612, "char_disp": "s"}, {"id": 50, "char": "l", "prob": 0.18712, "char_disp": "l"}, {"id": 39, "char": "a", "prob": 0.17398, "char_disp": "a"}, {"id": 52, "char": "n", "prob": 0.08735, "char_disp": "n"}, {"id": 43, "char": "e", "prob": 0.06329, "char_disp": "e"}], "chosen": {"id": 57, "char": "s", "prob": 0.3612, "in_topk": true, "char_disp": "s"}}, {"step": 15, "context_tail": "t be not des", "candidates": [{"id": 47, "char": "i", "prob": 0.62595, "char_disp": "i"}, {"id": 43, "char": "e", "prob": 0.36337, "char_disp": "e"}, {"id": 54, "char": "p", "prob": 0.00839, "char_disp": "p"}, {"id": 58, "char": "t", "prob": 0.00151, "char_disp": "t"}, {"id": 41, "char": "c", "prob": 0.00049, "char_disp": "c"}], "chosen": {"id": 47, "char": "i", "prob": 0.62595, "in_topk": true, "char_disp": "i"}}, {"step": 16, "context_tail": " be not desi", "candidates": [{"id": 56, "char": "r", "prob": 0.9984, "char_disp": "r"}, {"id": 45, "char": "g", "prob": 0.00144, "char_disp": "g"}, {"id": 42, "char": "d", "prob": 9e-05, "char_disp": "d"}, {"id": 57, "char": "s", "prob": 5e-05, "char_disp": "s"}, {"id": 60, "char": "v", "prob": 1e-05, "char_disp": "v"}], "chosen": {"id": 56, "char": "r", "prob": 0.9984, "in_topk": true, "char_disp": "r"}}, {"step": 17, "context_tail": "be not desir", "candidates": [{"id": 43, "char": "e", "prob": 0.99982, "char_disp": "e"}, {"id": 47, "char": "i", "prob": 0.00017, "char_disp": "i"}, {"id": 63, "char": "y", "prob": 0.0, "char_disp": "y"}, {"id": 46, "char": "h", "prob": 0.0, "char_disp": "h"}, {"id": 53, "char": "o", "prob": 0.0, "char_disp": "o"}], "chosen": {"id": 43, "char": "e", "prob": 0.99982, "in_topk": true, "char_disp": "e"}}, {"step": 18, "context_tail": "e not desire", "candidates": [{"id": 1, "char": " ", "prob": 0.39643, "char_disp": "\u2423"}, {"id": 8, "char": ".", "prob": 0.31631, "char_disp": "."}, {"id": 10, "char": ":", "prob": 0.09404, "char_disp": ":"}, {"id": 42, "char": "d", "prob": 0.06736, "char_disp": "d"}, {"id": 11, "char": ";", "prob": 0.0354, "char_disp": ";"}], "chosen": {"id": 42, "char": "d", "prob": 0.06736, "in_topk": true, "char_disp": "d"}}, {"step": 19, "context_tail": " not desired", "candidates": [{"id": 1, "char": " ", "prob": 0.7012, "char_disp": "\u2423"}, {"id": 8, "char": ".", "prob": 0.11538, "char_disp": "."}, {"id": 6, "char": ",", "prob": 0.078, "char_disp": ","}, {"id": 11, "char": ";", "prob": 0.0543, "char_disp": ";"}, {"id": 0, "char": "\n", "prob": 0.03199, "char_disp": "\\n"}], "chosen": {"id": 1, "char": " ", "prob": 0.7012, "in_topk": true, "char_disp": "\u2423"}}, {"step": 20, "context_tail": "not desired ", "candidates": [{"id": 58, "char": "t", "prob": 0.4831, "char_disp": "t"}, {"id": 47, "char": "i", "prob": 0.13611, "char_disp": "i"}, {"id": 53, "char": "o", "prob": 0.08136, "char_disp": "o"}, {"id": 61, "char": "w", "prob": 0.06777, "char_disp": "w"}, {"id": 40, "char": "b", "prob": 0.06377, "char_disp": "b"}], "chosen": {"id": 58, "char": "t", "prob": 0.4831, "in_topk": true, "char_disp": "t"}}, {"step": 21, "context_tail": "ot desired t", "candidates": [{"id": 53, "char": "o", "prob": 0.92265, "char_disp": "o"}, {"id": 46, "char": "h", "prob": 0.07532, "char_disp": "h"}, {"id": 56, "char": "r", "prob": 0.00087, "char_disp": "r"}, {"id": 47, "char": "i", "prob": 0.00066, "char_disp": "i"}, {"id": 43, "char": "e", "prob": 0.00032, "char_disp": "e"}], "chosen": {"id": 53, "char": "o", "prob": 0.92265, "in_topk": true, "char_disp": "o"}}, {"step": 22, "context_tail": "t desired to", "candidates": [{"id": 1, "char": " ", "prob": 0.99293, "char_disp": "\u2423"}, {"id": 7, "char": "-", "prob": 0.00248, "char_disp": "-"}, {"id": 53, "char": "o", "prob": 0.00166, "char_disp": "o"}, {"id": 0, "char": "\n", "prob": 0.00101, "char_disp": "\\n"}, {"id": 5, "char": "'", "prob": 0.0005, "char_disp": "'"}], "chosen": {"id": 1, "char": " ", "prob": 0.99293, "in_topk": true, "char_disp": "\u2423"}}, {"step": 23, "context_tail": " desired to ", "candidates": [{"id": 58, "char": "t", "prob": 0.22736, "char_disp": "t"}, {"id": 46, "char": "h", "prob": 0.1905, "char_disp": "h"}, {"id": 57, "char": "s", "prob": 0.10123, "char_disp": "s"}, {"id": 40, "char": "b", "prob": 0.09253, "char_disp": "b"}, {"id": 51, "char": "m", "prob": 0.05359, "char_disp": "m"}], "chosen": {"id": 56, "char": "r", "prob": 0.03233, "in_topk": false, "char_disp": "r"}}, {"step": 24, "context_tail": "desired to r", "candidates": [{"id": 43, "char": "e", "prob": 0.90985, "char_disp": "e"}, {"id": 47, "char": "i", "prob": 0.06633, "char_disp": "i"}, {"id": 53, "char": "o", "prob": 0.01037, "char_disp": "o"}, {"id": 39, "char": "a", "prob": 0.00808, "char_disp": "a"}, {"id": 59, "char": "u", "prob": 0.00524, "char_disp": "u"}], "chosen": {"id": 43, "char": "e", "prob": 0.90985, "in_topk": true, "char_disp": "e"}}, {"step": 25, "context_tail": "esired to re", "candidates": [{"id": 54, "char": "p", "prob": 0.28349, "char_disp": "p"}, {"id": 57, "char": "s", "prob": 0.23817, "char_disp": "s"}, {"id": 60, "char": "v", "prob": 0.14676, "char_disp": "v"}, {"id": 51, "char": "m", "prob": 0.10567, "char_disp": "m"}, {"id": 39, "char": "a", "prob": 0.06895, "char_disp": "a"}], "chosen": {"id": 54, "char": "p", "prob": 0.28349, "in_topk": true, "char_disp": "p"}}, {"step": 26, "context_tail": "sired to rep", "candidates": [{"id": 53, "char": "o", "prob": 0.46094, "char_disp": "o"}, {"id": 43, "char": "e", "prob": 0.34428, "char_disp": "e"}, {"id": 39, "char": "a", "prob": 0.11217, "char_disp": "a"}, {"id": 50, "char": "l", "prob": 0.0473, "char_disp": "l"}, {"id": 56, "char": "r", "prob": 0.03163, "char_disp": "r"}], "chosen": {"id": 43, "char": "e", "prob": 0.34428, "in_topk": true, "char_disp": "e"}}, {"step": 27, "context_tail": "ired to repe", "candidates": [{"id": 52, "char": "n", "prob": 0.90647, "char_disp": "n"}, {"id": 39, "char": "a", "prob": 0.08244, "char_disp": "a"}, {"id": 58, "char": "t", "prob": 0.01042, "char_disp": "t"}, {"id": 42, "char": "d", "prob": 0.00029, "char_disp": "d"}, {"id": 51, "char": "m", "prob": 0.0001, "char_disp": "m"}], "chosen": {"id": 52, "char": "n", "prob": 0.90647, "in_topk": true, "char_disp": "n"}}, {"step": 28, "context_tail": "red to repen", "candidates": [{"id": 58, "char": "t", "prob": 0.99714, "char_disp": "t"}, {"id": 47, "char": "i", "prob": 0.00167, "char_disp": "i"}, {"id": 57, "char": "s", "prob": 0.00061, "char_disp": "s"}, {"id": 39, "char": "a", "prob": 0.00031, "char_disp": "a"}, {"id": 42, "char": "d", "prob": 0.00015, "char_disp": "d"}], "chosen": {"id": 58, "char": "t", "prob": 0.99714, "in_topk": true, "char_disp": "t"}}, {"step": 29, "context_tail": "ed to repent", "candidates": [{"id": 1, "char": " ", "prob": 0.83435, "char_disp": "\u2423"}, {"id": 8, "char": ".", "prob": 0.06884, "char_disp": "."}, {"id": 6, "char": ",", "prob": 0.04014, "char_disp": ","}, {"id": 11, "char": ";", "prob": 0.0206, "char_disp": ";"}, {"id": 0, "char": "\n", "prob": 0.01799, "char_disp": "\\n"}], "chosen": {"id": 1, "char": " ", "prob": 0.83435, "in_topk": true, "char_disp": "\u2423"}}, {"step": 30, "context_tail": "d to repent ", "candidates": [{"id": 58, "char": "t", "prob": 0.43509, "char_disp": "t"}, {"id": 47, "char": "i", "prob": 0.29211, "char_disp": "i"}, {"id": 39, "char": "a", "prob": 0.1075, "char_disp": "a"}, {"id": 51, "char": "m", "prob": 0.03553, "char_disp": "m"}, {"id": 46, "char": "h", "prob": 0.02991, "char_disp": "h"}], "chosen": {"id": 51, "char": "m", "prob": 0.03553, "in_topk": true, "char_disp": "m"}}, {"step": 31, "context_tail": " to repent m", "candidates": [{"id": 43, "char": "e", "prob": 0.84163, "char_disp": "e"}, {"id": 63, "char": "y", "prob": 0.12953, "char_disp": "y"}, {"id": 53, "char": "o", "prob": 0.01695, "char_disp": "o"}, {"id": 47, "char": "i", "prob": 0.01083, "char_disp": "i"}, {"id": 39, "char": "a", "prob": 0.00077, "char_disp": "a"}], "chosen": {"id": 43, "char": "e", "prob": 0.84163, "in_topk": true, "char_disp": "e"}}, {"step": 32, "context_tail": "to repent me", "candidates": [{"id": 1, "char": " ", "prob": 0.72094, "char_disp": "\u2423"}, {"id": 6, "char": ",", "prob": 0.20741, "char_disp": ","}, {"id": 11, "char": ";", "prob": 0.03452, "char_disp": ";"}, {"id": 8, "char": ".", "prob": 0.02036, "char_disp": "."}, {"id": 10, "char": ":", "prob": 0.01081, "char_disp": ":"}], "chosen": {"id": 10, "char": ":", "prob": 0.01081, "in_topk": true, "char_disp": ":"}}, {"step": 33, "context_tail": "o repent me:", "candidates": [{"id": 0, "char": "\n", "prob": 0.80505, "char_disp": "\\n"}, {"id": 1, "char": " ", "prob": 0.19462, "char_disp": "\u2423"}, {"id": 7, "char": "-", "prob": 0.00023, "char_disp": "-"}, {"id": 5, "char": "'", "prob": 9e-05, "char_disp": "'"}, {"id": 6, "char": ",", "prob": 0.0, "char_disp": ","}], "chosen": {"id": 1, "char": " ", "prob": 0.19462, "in_topk": true, "char_disp": "\u2423"}}, {"step": 34, "context_tail": " repent me: ", "candidates": [{"id": 40, "char": "b", "prob": 0.15053, "char_disp": "b"}, {"id": 21, "char": "I", "prob": 0.14491, "char_disp": "I"}, {"id": 39, "char": "a", "prob": 0.13896, "char_disp": "a"}, {"id": 47, "char": "i", "prob": 0.12452, "char_disp": "i"}, {"id": 58, "char": "t", "prob": 0.0967, "char_disp": "t"}], "chosen": {"id": 39, "char": "a", "prob": 0.13896, "in_topk": true, "char_disp": "a"}}, {"step": 35, "context_tail": "repent me: a", "candidates": [{"id": 52, "char": "n", "prob": 0.65772, "char_disp": "n"}, {"id": 50, "char": "l", "prob": 0.09052, "char_disp": "l"}, {"id": 58, "char": "t", "prob": 0.08756, "char_disp": "t"}, {"id": 57, "char": "s", "prob": 0.07784, "char_disp": "s"}, {"id": 1, "char": " ", "prob": 0.02478, "char_disp": "\u2423"}], "chosen": {"id": 52, "char": "n", "prob": 0.65772, "in_topk": true, "char_disp": "n"}}, {"step": 36, "context_tail": "epent me: an", "candidates": [{"id": 42, "char": "d", "prob": 0.99732, "char_disp": "d"}, {"id": 1, "char": " ", "prob": 0.00119, "char_disp": "\u2423"}, {"id": 57, "char": "s", "prob": 0.00055, "char_disp": "s"}, {"id": 63, "char": "y", "prob": 0.00036, "char_disp": "y"}, {"id": 5, "char": "'", "prob": 0.00017, "char_disp": "'"}], "chosen": {"id": 42, "char": "d", "prob": 0.99732, "in_topk": true, "char_disp": "d"}}, {"step": 37, "context_tail": "pent me: and", "candidates": [{"id": 1, "char": " ", "prob": 0.95545, "char_disp": "\u2423"}, {"id": 6, "char": ",", "prob": 0.04224, "char_disp": ","}, {"id": 0, "char": "\n", "prob": 0.00226, "char_disp": "\\n"}, {"id": 7, "char": "-", "prob": 2e-05, "char_disp": "-"}, {"id": 5, "char": "'", "prob": 1e-05, "char_disp": "'"}], "chosen": {"id": 1, "char": " ", "prob": 0.95545, "in_topk": true, "char_disp": "\u2423"}}, {"step": 38, "context_tail": "ent me: and ", "candidates": [{"id": 63, "char": "y", "prob": 0.19712, "char_disp": "y"}, {"id": 58, "char": "t", "prob": 0.19683, "char_disp": "t"}, {"id": 21, "char": "I", "prob": 0.18284, "char_disp": "I"}, {"id": 61, "char": "w", "prob": 0.09097, "char_disp": "w"}, {"id": 46, "char": "h", "prob": 0.07, "char_disp": "h"}], "chosen": {"id": 63, "char": "y", "prob": 0.19712, "in_topk": true, "char_disp": "y"}}, {"step": 39, "context_tail": "nt me: and y", "candidates": [{"id": 53, "char": "o", "prob": 0.8375, "char_disp": "o"}, {"id": 43, "char": "e", "prob": 0.16129, "char_disp": "e"}, {"id": 47, "char": "i", "prob": 0.0012, "char_disp": "i"}, {"id": 46, "char": "h", "prob": 1e-05, "char_disp": "h"}, {"id": 39, "char": "a", "prob": 0.0, "char_disp": "a"}], "chosen": {"id": 53, "char": "o", "prob": 0.8375, "in_topk": true, "char_disp": "o"}}]}</script>
+<script>
+function showError(message){
+  const container = document.getElementById('network');
+  container.innerHTML = '<div style="padding:24px;font-family:var(--mono);font-size:13px;color:var(--flag);line-height:1.6;">'
+    + '<strong>Could not render the graph.</strong><br>' + message + '</div>';
+}
+
+try {
+  if (typeof vis === 'undefined') {
+    throw new Error('The vis-network library did not load from cdnjs.cloudflare.com. This usually means an ad blocker, privacy extension, or network filter is blocking that domain -- try disabling extensions for this page, or an incognito window.');
+  }
+
+  var data = JSON.parse(document.getElementById('trace-data').textContent);
+
+  var metaEl = document.getElementById('meta');
+  var fields = [
+    ['Prompt', data.prompt], ['Steps', data.steps], ['Top-k shown', data.topk],
+    ['Temperature', data.temperature], ['Seed', data.seed],
+  ];
+  metaEl.innerHTML = fields.map(([k,v]) => `<div><dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd></div>`).join('');
+  document.getElementById('fulltext').textContent = data.full_text;
+
+  function getVar(name){
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || '#888888';
+  }
+  var ACCENT = getVar('--accent'), FLAG = getVar('--flag'), INK = getVar('--ink'),
+      INK_DIM = getVar('--ink-dim'), PAPER_RAISED = getVar('--paper-raised'),
+      LINE_STRONG = getVar('--line-strong');
+
+  var nodes = [];
+  var edges = [];
+  nodes.push({ id: 'root', label: data.prompt, level: 0, shape: 'box',
+    color: { background: PAPER_RAISED, border: INK },
+    font: { color: INK, face: 'IBM Plex Mono', size: 13, bold: true },
+    borderWidth: 2, margin: 8 });
+
+  let contextNode = 'root';
+
+  data.trace.forEach((step, i) => {
+    const level = i + 1;
+    let trunkNodeId = null;
+
+    step.candidates.forEach(c => {
+      const nid = `s${i}_${c.id}`;
+      const isChosen = step.chosen.in_topk && c.id === step.chosen.id;
+      nodes.push({
+        id: nid, level: level,
+        label: c.char_disp,
+        shape: 'box',
+        color: isChosen
+          ? { background: ACCENT, border: ACCENT }
+          : { background: PAPER_RAISED, border: LINE_STRONG },
+        font: { color: isChosen ? '#ffffff' : INK_DIM, face: 'IBM Plex Mono', size: isChosen ? 15 : 12 },
+        borderWidth: isChosen ? 2 : 1,
+        title: `'${c.char_disp}' -- ${(c.prob*100).toFixed(3)}%${isChosen ? ' (chosen)' : ''}`,
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: isChosen ? 3 : 1,
+        color: { color: isChosen ? ACCENT : LINE_STRONG, opacity: isChosen ? 1 : 0.6 },
+        label: isChosen ? (c.prob*100).toFixed(1) + '%' : '',
+        font: { color: ACCENT, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      if (isChosen) trunkNodeId = nid;
+    });
+
+    if (!step.chosen.in_topk) {
+      const nid = `s${i}_surprise_${step.chosen.id}`;
+      nodes.push({
+        id: nid, level: level,
+        label: step.chosen.char_disp,
+        shape: 'box',
+        color: { background: FLAG, border: FLAG },
+        font: { color: '#ffffff', face: 'IBM Plex Mono', size: 15 },
+        borderWidth: 2,
+        title: `'${step.chosen.char_disp}' -- ${(step.chosen.prob*100).toFixed(3)}% (chosen, outside shown top-${data.topk})`,
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: 3,
+        color: { color: FLAG, opacity: 1 },
+        dashes: [4,3],
+        label: (step.chosen.prob*100).toFixed(1) + '%',
+        font: { color: FLAG, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      trunkNodeId = nid;
+    }
+
+    contextNode = trunkNodeId;
+  });
+
+  const container = document.getElementById('network');
+  const network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
+    layout: {
+      hierarchical: { enabled: true, direction: 'LR', levelSeparation: 110, nodeSpacing: 24, treeSpacing: 24, sortMethod: 'directed' },
+    },
+    physics: false,
+    interaction: { hover: true, dragNodes: false, zoomView: true, dragView: true },
+    nodes: { shape: 'box', margin: 6, widthConstraint: { minimum: 28 } },
+    edges: { arrows: { to: { enabled: false } } },
+  });
+  network.fit();
+} catch (e) {
+  console.error(e);
+  showError((e && e.message) ? e.message : String(e));
+}
+</script>

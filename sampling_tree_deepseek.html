@@ -1,0 +1,176 @@
+<title>Reasoning Tree</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:1040px; margin:0 auto; padding:40px 24px 56px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; font-weight:700; text-wrap:balance; }
+  .sub{ font-size:14.5px; color:var(--ink-dim); max-width:70ch; line-height:1.6; margin:0 0 18px; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:16px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .excerpt{ margin:0 0 20px; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 16px; }
+  .excerpt .src{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); display:block; margin-bottom:6px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:13px; line-height:1.6; white-space:pre-wrap; }
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--ink-dim); }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .graph-wrap{ border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); overflow:hidden; }
+  #network{ width:100%; height:600px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 40px; } #network{ height:440px; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+
+<div class="page">
+  <p class="kicker">Chain-of-thought, token by token &mdash; deepseek-r1:8b</p>
+  <h1>Reasoning Tree</h1>
+  <p class="sub">Every branch is a token the model considered while reasoning through the classic &ldquo;all but 9 die&rdquo; sheep riddle, sized and colored by its real predicted probability. The copper path is what it actually generated.</p>
+  <dl class="meta" id="meta"></dl>
+  <div class="excerpt"><span class="src">prompt</span><pre id="prompttext"></pre></div>
+  <div class="excerpt" id="reasoning-block" style="display:none;"><span class="src">reasoning (as generated, token by token)</span><pre id="reasoningtext"></pre></div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span>chosen (was the top candidate shown)</span>
+    <span><span class="dot" style="background:var(--flag)"></span>chosen (landed outside the shown top-k &mdash; a longer-shot pick)</span>
+    <span><span class="dot" style="background:var(--paper-raised);border:1px solid var(--line-strong)"></span>considered, not chosen</span>
+  </div>
+  <div class="graph-wrap"><div id="network"></div></div>
+  <figcaption>Built with vis-network from a real trace via Ollama's logprobs API: at every step the model's top candidate tokens and their real probabilities were captured, and the next token drawn by the server's own sampling -- not scripted.</figcaption>
+</div>
+
+<script type="application/json" id="trace-data">{"timestamp": "2026-09-14T12:02:16", "model": "deepseek-r1:8b", "prompt": "A farmer has 17 sheep. All but 9 die. How many sheep are left?", "steps": 59, "topk": 5, "temperature": 0.6, "full_text": "<think>The problem states: \"A farmer has 17 sheep. All but 9 die. How many sheep are left?\" I need to figure out how many sheep are left after this event.\n\nFirst, I should understand what \"all but 9\" means. I think \"all but", "reasoning": "\nThe problem states: \"A farmer has 17 sheep. All but 9 die. How many sheep are left?\" I need to figure out how many sheep are left after this event.\n\nFirst, I should understand what \"all but 9\" means. I think \"all but", "answer": "", "usage": {"prompt_tokens": 23, "prompt_tokens_details": {"cached_tokens": 2}, "completion_tokens": 60, "total_tokens": 83}, "trace": [{"step": 0, "candidates": [{"token": "<think>", "prob": 1.0, "char_disp": "<think>"}, {"token": "</think>", "prob": 0.0, "char_disp": "</think>"}, {"token": "\n", "prob": 0.0, "char_disp": "\\n"}, {"token": "/question", "prob": 0.0, "char_disp": "/question"}, {"token": " question", "prob": 0.0, "char_disp": " question"}], "chosen": {"token": "<think>", "prob": 1.0, "in_topk": true, "char_disp": "<think>"}}, {"step": 1, "candidates": [{"token": "I", "prob": 0.54761, "char_disp": "I"}, {"token": "The", "prob": 0.44524, "char_disp": "The"}, {"token": "Let", "prob": 0.00608, "char_disp": "Let"}, {"token": "We", "prob": 0.00061, "char_disp": "We"}, {"token": "There", "prob": 0.0001, "char_disp": "There"}], "chosen": {"token": "The", "prob": 0.44524, "in_topk": true, "char_disp": "The"}}, {"step": 2, "candidates": [{"token": " problem", "prob": 0.95825, "char_disp": " problem"}, {"token": " farmer", "prob": 0.04067, "char_disp": " farmer"}, {"token": " puzzle", "prob": 0.00065, "char_disp": " puzzle"}, {"token": " question", "prob": 0.00027, "char_disp": " question"}, {"token": "\u95ee\u9898\u662f", "prob": 4e-05, "char_disp": "\u95ee\u9898\u662f"}], "chosen": {"token": " problem", "prob": 0.95825, "in_topk": true, "char_disp": " problem"}}, {"step": 3, "candidates": [{"token": " states", "prob": 0.7147, "char_disp": " states"}, {"token": " is", "prob": 0.19833, "char_disp": " is"}, {"token": " says", "prob": 0.0595, "char_disp": " says"}, {"token": ":", "prob": 0.027, "char_disp": ":"}, {"token": " a", "prob": 0.00032, "char_disp": " a"}], "chosen": {"token": " states", "prob": 0.7147, "in_topk": true, "char_disp": " states"}}, {"step": 4, "candidates": [{"token": ":", "prob": 0.99812, "char_disp": ":"}, {"token": " a", "prob": 0.00135, "char_disp": " a"}, {"token": " that", "prob": 0.00041, "char_disp": " that"}, {"token": ",", "prob": 0.00011, "char_disp": ","}, {"token": " there", "prob": 0.0, "char_disp": " there"}], "chosen": {"token": ":", "prob": 0.99812, "in_topk": true, "char_disp": ":"}}, {"step": 5, "candidates": [{"token": " \"", "prob": 0.99124, "char_disp": " \""}, {"token": " A", "prob": 0.00846, "char_disp": " A"}, {"token": " a", "prob": 0.0003, "char_disp": " a"}, {"token": " '", "prob": 0.0, "char_disp": " '"}, {"token": " \u201c", "prob": 0.0, "char_disp": " \u201c"}], "chosen": {"token": " \"", "prob": 0.99124, "in_topk": true, "char_disp": " \""}}, {"step": 6, "candidates": [{"token": "A", "prob": 1.0, "char_disp": "A"}, {"token": "a", "prob": 0.0, "char_disp": "a"}, {"token": "All", "prob": 0.0, "char_disp": "All"}, {"token": "There", "prob": 0.0, "char_disp": "There"}, {"token": "1", "prob": 0.0, "char_disp": "1"}], "chosen": {"token": "A", "prob": 1.0, "in_topk": true, "char_disp": "A"}}, {"step": 7, "candidates": [{"token": " farmer", "prob": 1.0, "char_disp": " farmer"}, {"token": "\u519c\u6c11", "prob": 0.0, "char_disp": "\u519c\u6c11"}, {"token": " man", "prob": 0.0, "char_disp": " man"}, {"token": " farmers", "prob": 0.0, "char_disp": " farmers"}, {"token": " fox", "prob": 0.0, "char_disp": " fox"}], "chosen": {"token": " farmer", "prob": 1.0, "in_topk": true, "char_disp": " farmer"}}, {"step": 8, "candidates": [{"token": " has", "prob": 1.0, "char_disp": " has"}, {"token": " had", "prob": 0.0, "char_disp": " had"}, {"token": "has", "prob": 0.0, "char_disp": "has"}, {"token": " have", "prob": 0.0, "char_disp": " have"}, {"token": ".has", "prob": 0.0, "char_disp": ".has"}], "chosen": {"token": " has", "prob": 1.0, "in_topk": true, "char_disp": " has"}}, {"step": 9, "candidates": [{"token": " ", "prob": 1.0, "char_disp": "\u2423"}, {"token": " a", "prob": 0.0, "char_disp": " a"}, {"token": " some", "prob": 0.0, "char_disp": " some"}, {"token": " sheep", "prob": 0.0, "char_disp": " sheep"}, {"token": " X", "prob": 0.0, "char_disp": " X"}], "chosen": {"token": " ", "prob": 1.0, "in_topk": true, "char_disp": "\u2423"}}, {"step": 10, "candidates": [{"token": "1", "prob": 1.0, "char_disp": "1"}, {"token": "7", "prob": 0.0, "char_disp": "7"}, {"token": "4", "prob": 0.0, "char_disp": "4"}, {"token": "3", "prob": 0.0, "char_disp": "3"}, {"token": "9", "prob": 0.0, "char_disp": "9"}], "chosen": {"token": "1", "prob": 1.0, "in_topk": true, "char_disp": "1"}}, {"step": 11, "candidates": [{"token": "7", "prob": 1.0, "char_disp": "7"}, {"token": "8", "prob": 0.0, "char_disp": "8"}, {"token": "9", "prob": 0.0, "char_disp": "9"}, {"token": "6", "prob": 0.0, "char_disp": "6"}, {"token": "0", "prob": 0.0, "char_disp": "0"}], "chosen": {"token": "7", "prob": 1.0, "in_topk": true, "char_disp": "7"}}, {"step": 12, "candidates": [{"token": " sheep", "prob": 1.0, "char_disp": " sheep"}, {"token": " Sheep", "prob": 0.0, "char_disp": " Sheep"}, {"token": " she", "prob": 0.0, "char_disp": " she"}, {"token": "\u7f8a", "prob": 0.0, "char_disp": "\u7f8a"}, {"token": " goats", "prob": 0.0, "char_disp": " goats"}], "chosen": {"token": " sheep", "prob": 1.0, "in_topk": true, "char_disp": " sheep"}}, {"step": 13, "candidates": [{"token": ".", "prob": 1.0, "char_disp": "."}, {"token": ",", "prob": 0.0, "char_disp": ","}, {"token": ".\"", "prob": 0.0, "char_disp": ".\""}, {"token": " all", "prob": 0.0, "char_disp": " all"}, {"token": " on", "prob": 0.0, "char_disp": " on"}], "chosen": {"token": ".", "prob": 1.0, "in_topk": true, "char_disp": "."}}, {"step": 14, "candidates": [{"token": " All", "prob": 1.0, "char_disp": " All"}, {"token": " all", "prob": 0.0, "char_disp": " all"}, {"token": " Not", "prob": 0.0, "char_disp": " Not"}, {"token": " ", "prob": 0.0, "char_disp": "\u2423"}, {"token": " Some", "prob": 0.0, "char_disp": " Some"}], "chosen": {"token": " All", "prob": 1.0, "in_topk": true, "char_disp": " All"}}, {"step": 15, "candidates": [{"token": " but", "prob": 1.0, "char_disp": " but"}, {"token": "\u4f46", "prob": 0.0, "char_disp": "\u4f46"}, {"token": " But", "prob": 0.0, "char_disp": " But"}, {"token": " except", "prob": 0.0, "char_disp": " except"}, {"token": "_but", "prob": 0.0, "char_disp": "_but"}], "chosen": {"token": " but", "prob": 1.0, "in_topk": true, "char_disp": " but"}}, {"step": 16, "candidates": [{"token": " ", "prob": 1.0, "char_disp": "\u2423"}, {"token": " nine", "prob": 0.0, "char_disp": " nine"}, {"token": "9", "prob": 0.0, "char_disp": "9"}, {"token": " but", "prob": 0.0, "char_disp": " but"}, {"token": " the", "prob": 0.0, "char_disp": " the"}], "chosen": {"token": " ", "prob": 1.0, "in_topk": true, "char_disp": "\u2423"}}, {"step": 17, "candidates": [{"token": "9", "prob": 1.0, "char_disp": "9"}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": " ", "prob": 0.0, "char_disp": "\u2423"}, {"token": " \"", "prob": 0.0, "char_disp": " \""}, {"token": "8", "prob": 0.0, "char_disp": "8"}], "chosen": {"token": "9", "prob": 1.0, "in_topk": true, "char_disp": "9"}}, {"step": 18, "candidates": [{"token": " die", "prob": 1.0, "char_disp": " die"}, {"token": " died", "prob": 0.0, "char_disp": " died"}, {"token": " di", "prob": 0.0, "char_disp": " di"}, {"token": "die", "prob": 0.0, "char_disp": "die"}, {"token": " of", "prob": 0.0, "char_disp": " of"}], "chosen": {"token": " die", "prob": 1.0, "in_topk": true, "char_disp": " die"}}, {"step": 19, "candidates": [{"token": ".", "prob": 1.0, "char_disp": "."}, {"token": ".\"", "prob": 0.0, "char_disp": ".\""}, {"token": ",", "prob": 0.0, "char_disp": ","}, {"token": ".How", "prob": 0.0, "char_disp": ".How"}, {"token": " how", "prob": 0.0, "char_disp": " how"}], "chosen": {"token": ".", "prob": 1.0, "in_topk": true, "char_disp": "."}}, {"step": 20, "candidates": [{"token": " How", "prob": 1.0, "char_disp": " How"}, {"token": " how", "prob": 0.0, "char_disp": " how"}, {"token": " What", "prob": 0.0, "char_disp": " What"}, {"token": "How", "prob": 0.0, "char_disp": "How"}, {"token": " I", "prob": 0.0, "char_disp": " I"}], "chosen": {"token": " How", "prob": 1.0, "in_topk": true, "char_disp": " How"}}, {"step": 21, "candidates": [{"token": " many", "prob": 1.0, "char_disp": " many"}, {"token": "many", "prob": 0.0, "char_disp": "many"}, {"token": " Many", "prob": 0.0, "char_disp": " Many"}, {"token": "\u8bb8\u591a", "prob": 0.0, "char_disp": "\u8bb8\u591a"}, {"token": " ", "prob": 0.0, "char_disp": "\u2423"}], "chosen": {"token": " many", "prob": 1.0, "in_topk": true, "char_disp": " many"}}, {"step": 22, "candidates": [{"token": " sheep", "prob": 0.9965, "char_disp": " sheep"}, {"token": " are", "prob": 0.00349, "char_disp": " are"}, {"token": " were", "prob": 0.0, "char_disp": " were"}, {"token": " Sheep", "prob": 0.0, "char_disp": " Sheep"}, {"token": "  ", "prob": 0.0, "char_disp": "\u2423\u2423"}], "chosen": {"token": " sheep", "prob": 0.9965, "in_topk": true, "char_disp": " sheep"}}, {"step": 23, "candidates": [{"token": " are", "prob": 1.0, "char_disp": " are"}, {"token": "are", "prob": 0.0, "char_disp": "are"}, {"token": " did", "prob": 0.0, "char_disp": " did"}, {"token": " were", "prob": 0.0, "char_disp": " were"}, {"token": " does", "prob": 0.0, "char_disp": " does"}], "chosen": {"token": " are", "prob": 1.0, "in_topk": true, "char_disp": " are"}}, {"step": 24, "candidates": [{"token": " left", "prob": 1.0, "char_disp": " left"}, {"token": " ", "prob": 0.0, "char_disp": "\u2423"}, {"token": " alive", "prob": 0.0, "char_disp": " alive"}, {"token": "left", "prob": 0.0, "char_disp": "left"}, {"token": " dead", "prob": 0.0, "char_disp": " dead"}], "chosen": {"token": " left", "prob": 1.0, "in_topk": true, "char_disp": " left"}}, {"step": 25, "candidates": [{"token": "?\"", "prob": 0.9948, "char_disp": "?\""}, {"token": "?\"\n\n", "prob": 0.00519, "char_disp": "?\"\\n\\n"}, {"token": "?", "prob": 0.0, "char_disp": "?"}, {"token": "?\"\n", "prob": 0.0, "char_disp": "?\"\\n"}, {"token": "?\n\n", "prob": 0.0, "char_disp": "?\\n\\n"}], "chosen": {"token": "?\"", "prob": 0.9948, "in_topk": true, "char_disp": "?\""}}, {"step": 26, "candidates": [{"token": " I", "prob": 0.97408, "char_disp": " I"}, {"token": " It", "prob": 0.01174, "char_disp": " It"}, {"token": " First", "prob": 0.00908, "char_disp": " First"}, {"token": " At", "prob": 0.00195, "char_disp": " At"}, {"token": " This", "prob": 0.0009, "char_disp": " This"}], "chosen": {"token": " I", "prob": 0.97408, "in_topk": true, "char_disp": " I"}}, {"step": 27, "candidates": [{"token": " need", "prob": 0.998, "char_disp": " need"}, {"token": "'m", "prob": 0.00121, "char_disp": "'m"}, {"token": " think", "prob": 0.00049, "char_disp": " think"}, {"token": "'ve", "prob": 0.00011, "char_disp": "'ve"}, {"token": " am", "prob": 6e-05, "char_disp": " am"}], "chosen": {"token": " need", "prob": 0.998, "in_topk": true, "char_disp": " need"}}, {"step": 28, "candidates": [{"token": " to", "prob": 0.99999, "char_disp": " to"}, {"token": " step", "prob": 1e-05, "char_disp": " step"}, {"token": " a", "prob": 0.0, "char_disp": " a"}, {"token": " the", "prob": 0.0, "char_disp": " the"}, {"token": " some", "prob": 0.0, "char_disp": " some"}], "chosen": {"token": " to", "prob": 0.99999, "in_topk": true, "char_disp": " to"}}, {"step": 29, "candidates": [{"token": " figure", "prob": 0.52965, "char_disp": " figure"}, {"token": " box", "prob": 0.25196, "char_disp": " box"}, {"token": " reason", "prob": 0.1771, "char_disp": " reason"}, {"token": " find", "prob": 0.0365, "char_disp": " find"}, {"token": " determine", "prob": 0.00376, "char_disp": " determine"}], "chosen": {"token": " figure", "prob": 0.52965, "in_topk": true, "char_disp": " figure"}}, {"step": 30, "candidates": [{"token": " out", "prob": 0.914, "char_disp": " out"}, {"token": " this", "prob": 0.086, "char_disp": " this"}, {"token": " it", "prob": 0.0, "char_disp": " it"}, {"token": " that", "prob": 0.0, "char_disp": " that"}, {"token": "\n\n", "prob": 0.0, "char_disp": "\\n\\n"}], "chosen": {"token": " out", "prob": 0.914, "in_topk": true, "char_disp": " out"}}, {"step": 31, "candidates": [{"token": " what", "prob": 0.44111, "char_disp": " what"}, {"token": " how", "prob": 0.43836, "char_disp": " how"}, {"token": " the", "prob": 0.10863, "char_disp": " the"}, {"token": " this", "prob": 0.01162, "char_disp": " this"}, {"token": " a", "prob": 0.00015, "char_disp": " a"}], "chosen": {"token": " how", "prob": 0.43836, "in_topk": true, "char_disp": " how"}}, {"step": 32, "candidates": [{"token": " many", "prob": 0.93544, "char_disp": " many"}, {"token": " to", "prob": 0.06446, "char_disp": " to"}, {"token": " this", "prob": 9e-05, "char_disp": " this"}, {"token": " much", "prob": 1e-05, "char_disp": " much"}, {"token": " that", "prob": 0.0, "char_disp": " that"}], "chosen": {"token": " many", "prob": 0.93544, "in_topk": true, "char_disp": " many"}}, {"step": 33, "candidates": [{"token": " sheep", "prob": 0.86866, "char_disp": " sheep"}, {"token": " are", "prob": 0.1306, "char_disp": " are"}, {"token": " that", "prob": 0.00046, "char_disp": " that"}, {"token": " of", "prob": 0.00013, "char_disp": " of"}, {"token": " she", "prob": 6e-05, "char_disp": " she"}], "chosen": {"token": " sheep", "prob": 0.86866, "in_topk": true, "char_disp": " sheep"}}, {"step": 34, "candidates": [{"token": " are", "prob": 0.99901, "char_disp": " are"}, {"token": " that", "prob": 0.00047, "char_disp": " that"}, {"token": " died", "prob": 0.00033, "char_disp": " died"}, {"token": " remain", "prob": 8e-05, "char_disp": " remain"}, {"token": " die", "prob": 5e-05, "char_disp": " die"}], "chosen": {"token": " are", "prob": 0.99901, "in_topk": true, "char_disp": " are"}}, {"step": 35, "candidates": [{"token": " left", "prob": 0.98451, "char_disp": " left"}, {"token": " still", "prob": 0.01207, "char_disp": " still"}, {"token": " remaining", "prob": 0.00165, "char_disp": " remaining"}, {"token": " alive", "prob": 0.00163, "char_disp": " alive"}, {"token": " on", "prob": 8e-05, "char_disp": " on"}], "chosen": {"token": " left", "prob": 0.98451, "in_topk": true, "char_disp": " left"}}, {"step": 36, "candidates": [{"token": " after", "prob": 0.80588, "char_disp": " after"}, {"token": ".", "prob": 0.13613, "char_disp": "."}, {"token": ".\n\n", "prob": 0.05642, "char_disp": ".\\n\\n"}, {"token": ",", "prob": 0.00045, "char_disp": ","}, {"token": " and", "prob": 0.0004, "char_disp": " and"}], "chosen": {"token": " after", "prob": 0.80588, "in_topk": true, "char_disp": " after"}}, {"step": 37, "candidates": [{"token": " this", "prob": 0.84431, "char_disp": " this"}, {"token": " some", "prob": 0.11818, "char_disp": " some"}, {"token": " the", "prob": 0.03181, "char_disp": " the"}, {"token": " all", "prob": 0.00217, "char_disp": " all"}, {"token": " these", "prob": 0.00134, "char_disp": " these"}], "chosen": {"token": " this", "prob": 0.84431, "in_topk": true, "char_disp": " this"}}, {"step": 38, "candidates": [{"token": " event", "prob": 0.94751, "char_disp": " event"}, {"token": ".\n\n", "prob": 0.02859, "char_disp": ".\\n\\n"}, {"token": " happens", "prob": 0.008, "char_disp": " happens"}, {"token": " incident", "prob": 0.00618, "char_disp": " incident"}, {"token": " situation", "prob": 0.00356, "char_disp": " situation"}], "chosen": {"token": " event", "prob": 0.94751, "in_topk": true, "char_disp": " event"}}, {"step": 39, "candidates": [{"token": ".\n\n", "prob": 0.90997, "char_disp": ".\\n\\n"}, {"token": ".", "prob": 0.09002, "char_disp": "."}, {"token": ".\n", "prob": 0.0, "char_disp": ".\\n"}, {"token": ".<", "prob": 0.0, "char_disp": ".<"}, {"token": ",", "prob": 0.0, "char_disp": ","}], "chosen": {"token": ".\n\n", "prob": 0.90997, "in_topk": true, "char_disp": ".\\n\\n"}}, {"step": 40, "candidates": [{"token": "First", "prob": 0.99187, "char_disp": "First"}, {"token": "The", "prob": 0.00353, "char_disp": "The"}, {"token": "\"All", "prob": 0.00291, "char_disp": "\"All"}, {"token": "Let", "prob": 0.0009, "char_disp": "Let"}, {"token": "\"", "prob": 0.00053, "char_disp": "\""}], "chosen": {"token": "First", "prob": 0.99187, "in_topk": true, "char_disp": "First"}}, {"step": 41, "candidates": [{"token": ",", "prob": 0.99995, "char_disp": ","}, {"token": ",\"", "prob": 4e-05, "char_disp": ",\""}, {"token": " off", "prob": 0.0, "char_disp": " off"}, {"token": ",'", "prob": 0.0, "char_disp": ",'"}, {"token": ":", "prob": 0.0, "char_disp": ":"}], "chosen": {"token": ",", "prob": 0.99995, "in_topk": true, "char_disp": ","}}, {"step": 42, "candidates": [{"token": " I", "prob": 0.67143, "char_disp": " I"}, {"token": " \"", "prob": 0.28682, "char_disp": " \""}, {"token": " let", "prob": 0.03078, "char_disp": " let"}, {"token": " the", "prob": 0.00461, "char_disp": " the"}, {"token": " understand", "prob": 0.00275, "char_disp": " understand"}], "chosen": {"token": " I", "prob": 0.67143, "in_topk": true, "char_disp": " I"}}, {"step": 43, "candidates": [{"token": " should", "prob": 0.92612, "char_disp": " should"}, {"token": " need", "prob": 0.05086, "char_disp": " need"}, {"token": " understand", "prob": 0.01673, "char_disp": " understand"}, {"token": " read", "prob": 0.00343, "char_disp": " read"}, {"token": " think", "prob": 0.00116, "char_disp": " think"}], "chosen": {"token": " should", "prob": 0.92612, "in_topk": true, "char_disp": " should"}}, {"step": 44, "candidates": [{"token": " understand", "prob": 0.99764, "char_disp": " understand"}, {"token": " parse", "prob": 0.00165, "char_disp": " parse"}, {"token": " break", "prob": 0.00043, "char_disp": " break"}, {"token": " read", "prob": 0.00013, "char_disp": " read"}, {"token": " interpret", "prob": 9e-05, "char_disp": " interpret"}], "chosen": {"token": " understand", "prob": 0.99764, "in_topk": true, "char_disp": " understand"}}, {"step": 45, "candidates": [{"token": " what", "prob": 0.98505, "char_disp": " what"}, {"token": " the", "prob": 0.01475, "char_disp": " the"}, {"token": " \"", "prob": 0.00014, "char_disp": " \""}, {"token": " that", "prob": 6e-05, "char_disp": " that"}, {"token": " this", "prob": 0.0, "char_disp": " this"}], "chosen": {"token": " what", "prob": 0.98505, "in_topk": true, "char_disp": " what"}}, {"step": 46, "candidates": [{"token": " \"", "prob": 1.0, "char_disp": " \""}, {"token": " the", "prob": 0.0, "char_disp": " the"}, {"token": " \u201c", "prob": 0.0, "char_disp": " \u201c"}, {"token": " this", "prob": 0.0, "char_disp": " this"}, {"token": " '", "prob": 0.0, "char_disp": " '"}], "chosen": {"token": " \"", "prob": 1.0, "in_topk": true, "char_disp": " \""}}, {"step": 47, "candidates": [{"token": "all", "prob": 0.99999, "char_disp": "all"}, {"token": "All", "prob": 1e-05, "char_disp": "All"}, {"token": "\u6240\u6709", "prob": 0.0, "char_disp": "\u6240\u6709"}, {"token": " all", "prob": 0.0, "char_disp": " all"}, {"token": "but", "prob": 0.0, "char_disp": "but"}], "chosen": {"token": "all", "prob": 0.99999, "in_topk": true, "char_disp": "all"}}, {"step": 48, "candidates": [{"token": " but", "prob": 1.0, "char_disp": " but"}, {"token": " except", "prob": 0.0, "char_disp": " except"}, {"token": "\"", "prob": 0.0, "char_disp": "\""}, {"token": "\u4f46", "prob": 0.0, "char_disp": "\u4f46"}, {"token": " butt", "prob": 0.0, "char_disp": " butt"}], "chosen": {"token": " but", "prob": 1.0, "in_topk": true, "char_disp": " but"}}, {"step": 49, "candidates": [{"token": " ", "prob": 1.0, "char_disp": "\u2423"}, {"token": "\"", "prob": 0.0, "char_disp": "\""}, {"token": " nine", "prob": 0.0, "char_disp": " nine"}, {"token": "9", "prob": 0.0, "char_disp": "9"}, {"token": " some", "prob": 0.0, "char_disp": " some"}], "chosen": {"token": " ", "prob": 1.0, "in_topk": true, "char_disp": "\u2423"}}, {"step": 50, "candidates": [{"token": "9", "prob": 1.0, "char_disp": "9"}, {"token": "8", "prob": 0.0, "char_disp": "8"}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": "\u4e5d", "prob": 0.0, "char_disp": "\u4e5d"}, {"token": "0", "prob": 0.0, "char_disp": "0"}], "chosen": {"token": "9", "prob": 1.0, "in_topk": true, "char_disp": "9"}}, {"step": 51, "candidates": [{"token": "\"", "prob": 0.97894, "char_disp": "\""}, {"token": " die", "prob": 0.02106, "char_disp": " die"}, {"token": " died", "prob": 0.0, "char_disp": " died"}, {"token": "\u201d", "prob": 0.0, "char_disp": "\u201d"}, {"token": "'", "prob": 0.0, "char_disp": "'"}], "chosen": {"token": "\"", "prob": 0.97894, "in_topk": true, "char_disp": "\""}}, {"step": 52, "candidates": [{"token": " means", "prob": 1.0, "char_disp": " means"}, {"token": " really", "prob": 0.0, "char_disp": " really"}, {"token": " might", "prob": 0.0, "char_disp": " might"}, {"token": "means", "prob": 0.0, "char_disp": "means"}, {"token": " actually", "prob": 0.0, "char_disp": " actually"}], "chosen": {"token": " means", "prob": 1.0, "in_topk": true, "char_disp": " means"}}, {"step": 53, "candidates": [{"token": ".", "prob": 0.99999, "char_disp": "."}, {"token": " in", "prob": 1e-05, "char_disp": " in"}, {"token": " because", "prob": 0.0, "char_disp": " because"}, {"token": " here", "prob": 0.0, "char_disp": " here"}, {"token": ",", "prob": 0.0, "char_disp": ","}], "chosen": {"token": ".", "prob": 0.99999, "in_topk": true, "char_disp": "."}}, {"step": 54, "candidates": [{"token": " I", "prob": 0.5958, "char_disp": " I"}, {"token": " It", "prob": 0.28162, "char_disp": " It"}, {"token": " \"", "prob": 0.10836, "char_disp": " \""}, {"token": " In", "prob": 0.00702, "char_disp": " In"}, {"token": " The", "prob": 0.00229, "char_disp": " The"}], "chosen": {"token": " I", "prob": 0.5958, "in_topk": true, "char_disp": " I"}}, {"step": 55, "candidates": [{"token": " think", "prob": 0.98365, "char_disp": " think"}, {"token": "'ve", "prob": 0.01573, "char_disp": "'ve"}, {"token": " know", "prob": 0.00033, "char_disp": " know"}, {"token": " remember", "prob": 0.0002, "char_disp": " remember"}, {"token": " recall", "prob": 4e-05, "char_disp": " recall"}], "chosen": {"token": " think", "prob": 0.98365, "in_topk": true, "char_disp": " think"}}, {"step": 56, "candidates": [{"token": " \"", "prob": 0.50781, "char_disp": " \""}, {"token": " it", "prob": 0.49207, "char_disp": " it"}, {"token": " that", "prob": 4e-05, "char_disp": " that"}, {"token": " I", "prob": 4e-05, "char_disp": " I"}, {"token": " this", "prob": 3e-05, "char_disp": " this"}], "chosen": {"token": " \"", "prob": 0.50781, "in_topk": true, "char_disp": " \""}}, {"step": 57, "candidates": [{"token": "all", "prob": 0.99642, "char_disp": "all"}, {"token": "but", "prob": 0.00358, "char_disp": "but"}, {"token": "not", "prob": 0.0, "char_disp": "not"}, {"token": "except", "prob": 0.0, "char_disp": "except"}, {"token": "But", "prob": 0.0, "char_disp": "But"}], "chosen": {"token": "all", "prob": 0.99642, "in_topk": true, "char_disp": "all"}}, {"step": 58, "candidates": [{"token": " but", "prob": 0.99999, "char_disp": " but"}, {"token": "\"", "prob": 1e-05, "char_disp": "\""}, {"token": " except", "prob": 0.0, "char_disp": " except"}, {"token": " butt", "prob": 0.0, "char_disp": " butt"}, {"token": "ut", "prob": 0.0, "char_disp": "ut"}], "chosen": {"token": " but", "prob": 0.99999, "in_topk": true, "char_disp": " but"}}]}</script>
+<script>
+function showError(message){
+  var el = document.getElementById('network');
+  el.innerHTML = '<div style="padding:24px;font-family:var(--mono);font-size:13px;color:var(--flag);line-height:1.6;">'
+    + '<strong>Could not render the graph.</strong><br>' + message + '</div>';
+}
+
+try {
+  if (typeof vis === 'undefined') {
+    throw new Error('The vis-network library did not load from cdnjs.cloudflare.com. This usually means an ad blocker, privacy extension, or network filter is blocking that domain -- try disabling extensions for this page, or an incognito window.');
+  }
+
+  var data = JSON.parse(document.getElementById('trace-data').textContent);
+
+  var metaEl = document.getElementById('meta');
+  var fields = [["Model", "deepseek-r1:8b"], ["Steps", 59], ["Top-k shown", 5], ["Temperature", 0.6], ["Tokens", 60]];
+  metaEl.innerHTML = fields.map(function(kv){ return '<div><dt>' + kv[0] + '</dt><dd>' + String(kv[1]).replace(/</g,'&lt;') + '</dd></div>'; }).join('');
+  document.getElementById('prompttext').textContent = data.prompt;
+  if (data.reasoning) {
+    document.getElementById('reasoning-block').style.display = '';
+    document.getElementById('reasoningtext').textContent = data.reasoning;
+  }
+
+  function getVar(name){
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || '#888888';
+  }
+  var ACCENT = getVar('--accent'), FLAG = getVar('--flag'), INK = getVar('--ink'),
+      INK_DIM = getVar('--ink-dim'), PAPER_RAISED = getVar('--paper-raised'),
+      LINE_STRONG = getVar('--line-strong');
+
+  var nodes = [];
+  var edges = [];
+  nodes.push({ id: 'root', label: (data.prompt.length > 24 ? data.prompt.slice(0,24) + '...' : data.prompt), level: 0, shape: 'box',
+    color: { background: PAPER_RAISED, border: INK },
+    font: { color: INK, face: 'IBM Plex Mono', size: 13, bold: true },
+    borderWidth: 2, margin: 8 });
+
+  var contextNode = 'root';
+
+  data.trace.forEach(function(step, i){
+    var level = i + 1;
+    var trunkNodeId = null;
+
+    step.candidates.forEach(function(c){
+      var nid = 's' + i + '_' + c.token.replace(/[^a-zA-Z0-9]/g, '') + '_' + i + '_' + Math.random().toString(36).slice(2,6);
+      var isChosen = step.chosen.in_topk && c.token === step.chosen.token;
+      nodes.push({
+        id: nid, level: level,
+        label: c.char_disp,
+        shape: 'box',
+        color: isChosen
+          ? { background: ACCENT, border: ACCENT }
+          : { background: PAPER_RAISED, border: LINE_STRONG },
+        font: { color: isChosen ? '#ffffff' : INK_DIM, face: 'IBM Plex Mono', size: isChosen ? 15 : 12 },
+        borderWidth: isChosen ? 2 : 1,
+        title: "'" + c.char_disp + "' -- " + (c.prob*100).toFixed(3) + '%' + (isChosen ? ' (chosen)' : ''),
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: isChosen ? 3 : 1,
+        color: { color: isChosen ? ACCENT : LINE_STRONG, opacity: isChosen ? 1 : 0.6 },
+        label: isChosen ? (c.prob*100).toFixed(1) + '%' : '',
+        font: { color: ACCENT, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      if (isChosen) trunkNodeId = nid;
+    });
+
+    if (!step.chosen.in_topk) {
+      var nid2 = 's' + i + '_surprise_' + Math.random().toString(36).slice(2,6);
+      nodes.push({
+        id: nid2, level: level,
+        label: step.chosen.char_disp,
+        shape: 'box',
+        color: { background: FLAG, border: FLAG },
+        font: { color: '#ffffff', face: 'IBM Plex Mono', size: 15 },
+        borderWidth: 2,
+        title: "'" + step.chosen.char_disp + "' -- " + (step.chosen.prob*100).toFixed(3) + '% (chosen, outside shown top-' + data.topk + ')',
+      });
+      edges.push({
+        from: contextNode, to: nid2,
+        width: 3,
+        color: { color: FLAG, opacity: 1 },
+        dashes: [4,3],
+        label: (step.chosen.prob*100).toFixed(1) + '%',
+        font: { color: FLAG, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      trunkNodeId = nid2;
+    }
+
+    contextNode = trunkNodeId;
+  });
+
+  var container = document.getElementById('network');
+  var network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
+    layout: {
+      hierarchical: { enabled: true, direction: 'LR', levelSeparation: 130, nodeSpacing: 26, treeSpacing: 26, sortMethod: 'directed' },
+    },
+    physics: false,
+    interaction: { hover: true, dragNodes: false, zoomView: true, dragView: true },
+    nodes: { shape: 'box', margin: 6, widthConstraint: { minimum: 28 } },
+    edges: { arrows: { to: { enabled: false } } },
+  });
+  network.fit();
+} catch (e) {
+  console.error(e);
+  showError((e && e.message) ? e.message : String(e));
+}
+</script>

@@ -1,0 +1,133 @@
+<title>GPU Kernel Trace</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:900px; margin:0 auto; padding:40px 24px 56px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; font-weight:700; text-wrap:balance; }
+  .sub{ font-size:14.5px; color:var(--ink-dim); max-width:70ch; line-height:1.6; margin:0 0 18px; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:20px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; }
+  h2{ font-size:15px; font-family:var(--cond); letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-dim); margin:32px 0 14px; }
+  .chart{ border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); padding:18px 20px; }
+  .bar-row{ display:grid; grid-template-columns:190px 1fr 60px; align-items:center; gap:10px; padding:5px 0; }
+  .bar-name{ font-family:var(--mono); font-size:11.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar-track{ background:var(--line); border-radius:3px; height:14px; overflow:hidden; }
+  .bar-fill{ background:var(--accent); height:100%; border-radius:3px; }
+  .bar-pct{ font-family:var(--mono); font-size:11.5px; text-align:right; color:var(--ink-dim); font-variant-numeric:tabular-nums; }
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); }
+  table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12px; min-width:640px; }
+  thead th{ text-align:left; font-family:var(--cond); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); padding:9px 10px; border-bottom:1px solid var(--line-strong); }
+  tbody td{ padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  tbody td.meaning{ font-family:var(--sans); color:var(--ink-dim); white-space:normal; }
+  .ggml-chip{ display:inline-block; font-size:10px; background:var(--accent-soft); color:var(--accent); border-radius:4px; padding:1px 6px; font-weight:600; }
+  .note{ font-size:12.5px; line-height:1.6; color:var(--ink-dim); background:var(--accent-soft); border:1px dashed var(--line-strong); border-radius:8px; padding:12px 16px; margin:16px 0 0; }
+  .note code{ font-family:var(--mono); background:var(--paper); padding:0 3px; border-radius:3px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 40px; } .bar-row{ grid-template-columns:110px 1fr 50px; } .bar-name{font-size:10px;} }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">Nsight Systems &mdash; real CUDA kernel execution</p>
+  <h1>GPU Kernel Trace</h1>
+  <p class="sub">One actual <code>deepseek-r1:8b</code> inference call, profiled with NVIDIA Nsight Systems while <code>ollama serve</code> ran wrapped under the profiler. Every row below is a real CUDA kernel that executed on the RTX 2080 Ti, with real hardware timing &mdash; not the conceptual ggml op graph, the layer beneath it.</p>
+  <dl class="meta">
+    <div><dt>GPU</dt><dd>RTX 2080 Ti</dd></div>
+    <div><dt>Kernel launches</dt><dd>2270</dd></div>
+    <div><dt>Distinct kernels</dt><dd>27</dd></div>
+    <div><dt>GPU-busy time</dt><dd>175.2 ms</dd></div>
+    <div><dt>Quantization</dt><dd>Q4_K_M</dd></div>
+  </dl>
+
+  <h2>Where the GPU spent its time</h2>
+  <div class="chart">
+    <div class="bar-row"><span class="bar-name" title="mul_mat_q (Q4_K)">mul_mat_q (Q4_K)</span><div class="bar-track"><div class="bar-fill" style="width:41.0%"></div></div><span class="bar-pct">41.0%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_vec_q (Q4_K)">mul_mat_vec_q (Q4_K)</span><div class="bar-track"><div class="bar-fill" style="width:18.7%"></div></div><span class="bar-pct">18.7%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_q (Q6_K)">mul_mat_q (Q6_K)</span><div class="bar-track"><div class="bar-fill" style="width:8.2%"></div></div><span class="bar-pct">8.2%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_vec_q (Q6_K)">mul_mat_vec_q (Q6_K)</span><div class="bar-track"><div class="bar-fill" style="width:5.6%"></div></div><span class="bar-pct">5.6%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_vec_q (Q6_K)">mul_mat_vec_q (Q6_K)</span><div class="bar-track"><div class="bar-fill" style="width:4.6%"></div></div><span class="bar-pct">4.6%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_f">mul_mat_f</span><div class="bar-track"><div class="bar-fill" style="width:3.9%"></div></div><span class="bar-pct">3.9%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_vec_q (Q4_K)">mul_mat_vec_q (Q4_K)</span><div class="bar-track"><div class="bar-fill" style="width:3.7%"></div></div><span class="bar-pct">3.7%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_vec_q (Q4_K)">mul_mat_vec_q (Q4_K)</span><div class="bar-track"><div class="bar-fill" style="width:2.9%"></div></div><span class="bar-pct">2.9%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_vec_f">mul_mat_vec_f</span><div class="bar-track"><div class="bar-fill" style="width:1.9%"></div></div><span class="bar-pct">1.9%</span></div>
+    <div class="bar-row"><span class="bar-name" title="mul_mat_q_stream_k_fixup">mul_mat_q_stream_k_fixup</span><div class="bar-track"><div class="bar-fill" style="width:1.7%"></div></div><span class="bar-pct">1.7%</span></div>
+  </div>
+  <figcaption>Bar length is share of total GPU-busy time across all 2270 kernel launches in this call. <code>mul_mat_q</code> &mdash; the quantized matrix multiply &mdash; alone accounts for the majority: matrix multiplication is where an LLM's compute actually goes.</figcaption>
+
+  <h2>Every kernel, matched back to its ggml op</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Kernel</th><th>Meaning</th><th>ggml op</th><th>Launches</th><th>Avg</th><th>Total</th><th>% time</th></tr></thead>
+      <tbody>
+        <tr><td>mul_mat_q (Q4_K)</td><td class="meaning">quantized matrix multiply</td><td><span class="ggml-chip">MUL_MAT</span></td><td>196</td><td>366.6 µs</td><td>71.9 ms</td><td>41.0%</td></tr>
+        <tr><td>mul_mat_vec_q (Q4_K)</td><td class="meaning">quantized matrix x vector (single-token decode)</td><td><span class="ggml-chip">MUL_MAT</span></td><td>58</td><td>565.4 µs</td><td>32.8 ms</td><td>18.7%</td></tr>
+        <tr><td>mul_mat_q (Q6_K)</td><td class="meaning">quantized matrix multiply</td><td><span class="ggml-chip">MUL_MAT</span></td><td>17</td><td>843.5 µs</td><td>14.3 ms</td><td>8.2%</td></tr>
+        <tr><td>mul_mat_vec_q (Q6_K)</td><td class="meaning">quantized matrix x vector (single-token decode)</td><td><span class="ggml-chip">MUL_MAT</span></td><td>2</td><td>4.9 ms</td><td>9.8 ms</td><td>5.6%</td></tr>
+        <tr><td>mul_mat_vec_q (Q6_K)</td><td class="meaning">quantized matrix x vector (single-token decode)</td><td><span class="ggml-chip">MUL_MAT</span></td><td>12</td><td>677.5 µs</td><td>8.1 ms</td><td>4.6%</td></tr>
+        <tr><td>mul_mat_f</td><td class="meaning">float16 matrix multiply</td><td><span class="ggml-chip">MUL_MAT</span></td><td>36</td><td>191.5 µs</td><td>6.9 ms</td><td>3.9%</td></tr>
+        <tr><td>mul_mat_vec_q (Q4_K)</td><td class="meaning">quantized matrix x vector (single-token decode)</td><td><span class="ggml-chip">MUL_MAT</span></td><td>196</td><td>32.8 µs</td><td>6.4 ms</td><td>3.7%</td></tr>
+        <tr><td>mul_mat_vec_q (Q4_K)</td><td class="meaning">quantized matrix x vector (single-token decode)</td><td><span class="ggml-chip">MUL_MAT</span></td><td>45</td><td>111.4 µs</td><td>5.0 ms</td><td>2.9%</td></tr>
+        <tr><td>mul_mat_vec_f</td><td class="meaning">float16 matrix x vector</td><td><span class="ggml-chip">MUL_MAT</span></td><td>22</td><td>153.2 µs</td><td>3.4 ms</td><td>1.9%</td></tr>
+        <tr><td>mul_mat_q_stream_k_fixup</td><td class="meaning">merge step for split matmul</td><td><span class="ggml-chip">MUL_MAT</span></td><td>196</td><td>14.9 µs</td><td>2.9 ms</td><td>1.7%</td></tr>
+        <tr><td>flash_attn_ext_f16</td><td class="meaning">fused attention (Q·K, softmax, ·V in one kernel)</td><td><span class="ggml-chip">FLASH_ATTN_EXT</span></td><td>36</td><td>59.3 µs</td><td>2.1 ms</td><td>1.2%</td></tr>
+        <tr><td>rms_norm_f32</td><td class="meaning">RMSNorm</td><td><span class="ggml-chip">NORM</span></td><td>191</td><td>10.8 µs</td><td>2.1 ms</td><td>1.2%</td></tr>
+        <tr><td>quantize_mmq_q8_1</td><td class="meaning">quantize activations to Q8_1 before matmul</td><td><span class="ggml-chip">(internal)</span></td><td>196</td><td>7.1 µs</td><td>1.4 ms</td><td>0.8%</td></tr>
+        <tr><td>mul_mat_vec_q (Q6_K)</td><td class="meaning">quantized matrix x vector (single-token decode)</td><td><span class="ggml-chip">MUL_MAT</span></td><td>17</td><td>76.5 µs</td><td>1.3 ms</td><td>0.7%</td></tr>
+        <tr><td>flash_attn_ext_f16</td><td class="meaning">fused attention (Q·K, softmax, ·V in one kernel)</td><td><span class="ggml-chip">FLASH_ATTN_EXT</span></td><td>58</td><td>21.3 µs</td><td>1.2 ms</td><td>0.7%</td></tr>
+        <tr><td>quantize_q8_1</td><td class="meaning">quantize activations to Q8_1</td><td><span class="ggml-chip">(internal)</span></td><td>330</td><td>2.8 µs</td><td>913.4 µs</td><td>0.5%</td></tr>
+        <tr><td>rms_norm_mul_rope_f32</td><td class="meaning">fused RMSNorm + rotary position embedding</td><td><span class="ggml-chip">NORM + ROPE</span></td><td>94</td><td>8.8 µs</td><td>829.3 µs</td><td>0.5%</td></tr>
+        <tr><td>k_bin_bcast (add)</td><td class="meaning">residual / bias add</td><td><span class="ggml-chip">ADD</span></td><td>142</td><td>5.5 µs</td><td>781.8 µs</td><td>0.4%</td></tr>
+        <tr><td>rms_norm_mul_rope_f32</td><td class="meaning">fused RMSNorm + rotary position embedding</td><td><span class="ggml-chip">NORM + ROPE</span></td><td>94</td><td>6.8 µs</td><td>636.9 µs</td><td>0.4%</td></tr>
+        <tr><td>unary_gated_op_kernel (SiLU)</td><td class="meaning">SwiGLU activation</td><td><span class="ggml-chip">FFN</span></td><td>70</td><td>9.0 µs</td><td>630.7 µs</td><td>0.4%</td></tr>
+        <tr><td>mul_mat_vec_f</td><td class="meaning">float16 matrix x vector</td><td><span class="ggml-chip">MUL_MAT</span></td><td>36</td><td>17.2 µs</td><td>618.4 µs</td><td>0.4%</td></tr>
+        <tr><td>k_set_rows</td><td class="meaning">write into KV cache</td><td><span class="ggml-chip">SET_ROWS</span></td><td>94</td><td>3.8 µs</td><td>359.4 µs</td><td>0.2%</td></tr>
+        <tr><td>flash_attn_stream_k_fixup</td><td class="meaning">merge step for split attention</td><td><span class="ggml-chip">FLASH_ATTN_EXT</span></td><td>36</td><td>7.8 µs</td><td>281.3 µs</td><td>0.2%</td></tr>
+        <tr><td>mul_mat_q_stream_k_fixup</td><td class="meaning">merge step for split matmul</td><td><span class="ggml-chip">MUL_MAT</span></td><td>17</td><td>14.9 µs</td><td>253.2 µs</td><td>0.1%</td></tr>
+        <tr><td>flash_attn_stream_k_fixup</td><td class="meaning">merge step for split attention</td><td><span class="ggml-chip">FLASH_ATTN_EXT</span></td><td>58</td><td>2.0 µs</td><td>116.2 µs</td><td>0.1%</td></tr>
+        <tr><td>quantize_mmq_q8_1</td><td class="meaning">quantize activations to Q8_1 before matmul</td><td><span class="ggml-chip">(internal)</span></td><td>17</td><td>6.7 µs</td><td>114.3 µs</td><td>0.1%</td></tr>
+        <tr><td>k_get_rows_float</td><td class="meaning">embedding lookup</td><td><span class="ggml-chip">GET_ROWS</span></td><td>4</td><td>4.1 µs</td><td>16.4 µs</td><td>0.0%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Memory traffic</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Operation</th><th>Count</th><th>Total</th><th>% of memory time</th></tr></thead>
+      <tbody>
+        <tr><td>[CUDA memcpy Host-to-Device]</td><td>4850</td><td>2.05 s</td><td>99.8%</td></tr>
+        <tr><td>[CUDA memset]</td><td>4</td><td>4.2 ms</td><td>0.2%</td></tr>
+        <tr><td>[CUDA memcpy Device-to-Host]</td><td>3</td><td>796.8 µs</td><td>0.0%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    Host-to-Device copies dominate memory time &mdash; that is the model's weights moving from system RAM into GPU VRAM once at load time (matches the ~10s <code>load_duration</code> Ollama's own API reported for this call). It is a one-time cost per model load, separate from the per-token compute above.
+  </div>
+</div>

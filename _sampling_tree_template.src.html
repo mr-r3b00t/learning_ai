@@ -1,0 +1,173 @@
+<title>Sampling Tree</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:980px; margin:0 auto; padding:40px 24px 56px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; font-weight:700; text-wrap:balance; }
+  .sub{ font-size:14.5px; color:var(--ink-dim); max-width:68ch; line-height:1.6; margin:0 0 18px; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:16px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .excerpt{ margin:0 0 20px; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 16px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:13px; line-height:1.6; white-space:pre-wrap; }
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--ink-dim); }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .graph-wrap{ border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); overflow:hidden; }
+  #network{ width:100%; height:560px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 40px; } #network{ height:440px; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+
+<div class="page">
+  <p class="kicker">Token-by-token generation &mdash; tiny-shakespeare</p>
+  <h1>Sampling Tree</h1>
+  <p class="sub">Every branch is a character the model considered at that step, sized and colored by its real predicted probability. The copper path is the one actually sampled &mdash; drag, scroll to zoom, hover any node for its exact probability.</p>
+  <dl class="meta" id="meta"></dl>
+  <div class="excerpt"><pre id="fulltext"></pre></div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span>chosen (was the top candidate shown)</span>
+    <span><span class="dot" style="background:var(--flag)"></span>chosen (landed outside the shown top-k &mdash; a longer-shot pick)</span>
+    <span><span class="dot" style="background:var(--paper-raised);border:1px solid var(--line-strong)"></span>considered, not chosen</span>
+  </div>
+  <div class="graph-wrap"><div id="network"></div></div>
+  <figcaption>Built with vis-network from a real trace: at every step the model's full 65-character probability distribution was computed, its top candidates recorded, and the next character drawn by weighted random sampling &mdash; not scripted.</figcaption>
+</div>
+
+<script type="application/json" id="trace-data">__TRACE_JSON__</script>
+<script>
+function showError(message){
+  const container = document.getElementById('network');
+  container.innerHTML = '<div style="padding:24px;font-family:var(--mono);font-size:13px;color:var(--flag);line-height:1.6;">'
+    + '<strong>Could not render the graph.</strong><br>' + message + '</div>';
+}
+
+try {
+  if (typeof vis === 'undefined') {
+    throw new Error('The vis-network library did not load from cdnjs.cloudflare.com. This usually means an ad blocker, privacy extension, or network filter is blocking that domain -- try disabling extensions for this page, or an incognito window.');
+  }
+
+  var data = JSON.parse(document.getElementById('trace-data').textContent);
+
+  var metaEl = document.getElementById('meta');
+  var fields = [
+    ['Prompt', data.prompt], ['Steps', data.steps], ['Top-k shown', data.topk],
+    ['Temperature', data.temperature], ['Seed', data.seed],
+  ];
+  metaEl.innerHTML = fields.map(([k,v]) => `<div><dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd></div>`).join('');
+  document.getElementById('fulltext').textContent = data.full_text;
+
+  function getVar(name){
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || '#888888';
+  }
+  var ACCENT = getVar('--accent'), FLAG = getVar('--flag'), INK = getVar('--ink'),
+      INK_DIM = getVar('--ink-dim'), PAPER_RAISED = getVar('--paper-raised'),
+      LINE_STRONG = getVar('--line-strong');
+
+  var nodes = [];
+  var edges = [];
+  nodes.push({ id: 'root', label: data.prompt, level: 0, shape: 'box',
+    color: { background: PAPER_RAISED, border: INK },
+    font: { color: INK, face: 'IBM Plex Mono', size: 13, bold: true },
+    borderWidth: 2, margin: 8 });
+
+  let contextNode = 'root';
+
+  data.trace.forEach((step, i) => {
+    const level = i + 1;
+    let trunkNodeId = null;
+
+    step.candidates.forEach(c => {
+      const nid = `s${i}_${c.id}`;
+      const isChosen = step.chosen.in_topk && c.id === step.chosen.id;
+      nodes.push({
+        id: nid, level: level,
+        label: c.char_disp,
+        shape: 'box',
+        color: isChosen
+          ? { background: ACCENT, border: ACCENT }
+          : { background: PAPER_RAISED, border: LINE_STRONG },
+        font: { color: isChosen ? '#ffffff' : INK_DIM, face: 'IBM Plex Mono', size: isChosen ? 15 : 12 },
+        borderWidth: isChosen ? 2 : 1,
+        title: `'${c.char_disp}' -- ${(c.prob*100).toFixed(3)}%${isChosen ? ' (chosen)' : ''}`,
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: isChosen ? 3 : 1,
+        color: { color: isChosen ? ACCENT : LINE_STRONG, opacity: isChosen ? 1 : 0.6 },
+        label: isChosen ? (c.prob*100).toFixed(1) + '%' : '',
+        font: { color: ACCENT, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      if (isChosen) trunkNodeId = nid;
+    });
+
+    if (!step.chosen.in_topk) {
+      const nid = `s${i}_surprise_${step.chosen.id}`;
+      nodes.push({
+        id: nid, level: level,
+        label: step.chosen.char_disp,
+        shape: 'box',
+        color: { background: FLAG, border: FLAG },
+        font: { color: '#ffffff', face: 'IBM Plex Mono', size: 15 },
+        borderWidth: 2,
+        title: `'${step.chosen.char_disp}' -- ${(step.chosen.prob*100).toFixed(3)}% (chosen, outside shown top-${data.topk})`,
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: 3,
+        color: { color: FLAG, opacity: 1 },
+        dashes: [4,3],
+        label: (step.chosen.prob*100).toFixed(1) + '%',
+        font: { color: FLAG, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      trunkNodeId = nid;
+    }
+
+    contextNode = trunkNodeId;
+  });
+
+  const container = document.getElementById('network');
+  const network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
+    layout: {
+      hierarchical: { enabled: true, direction: 'LR', levelSeparation: 110, nodeSpacing: 24, treeSpacing: 24, sortMethod: 'directed' },
+    },
+    physics: false,
+    interaction: { hover: true, dragNodes: false, zoomView: true, dragView: true },
+    nodes: { shape: 'box', margin: 6, widthConstraint: { minimum: 28 } },
+    edges: { arrows: { to: { enabled: false } } },
+  });
+  network.fit();
+} catch (e) {
+  console.error(e);
+  showError((e && e.message) ? e.message : String(e));
+}
+</script>

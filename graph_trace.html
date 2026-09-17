@@ -1,0 +1,94 @@
+<title>Live Computation Graph</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --band:rgba(28,63,102,0.045);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16); --band:rgba(232,241,251,0.05);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16); --band:rgba(232,241,251,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:760px; margin:0 auto; padding:40px 24px 64px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(26px,5vw,36px); margin:0 0 18px; font-weight:700; text-wrap:balance; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:22px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); }
+  table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; min-width:600px; }
+  thead th{ text-align:left; font-family:var(--cond); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); padding:10px 12px; border-bottom:1px solid var(--line-strong); position:sticky; top:0; background:var(--paper-raised); }
+  tbody td{ padding:7px 12px; border-bottom:1px solid var(--line); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  tbody tr.band{ background:var(--band); }
+  .order{ color:var(--ink-dim); }
+  .name{ color:var(--ink); font-weight:600; }
+  .typechip{ display:inline-block; font-size:10.5px; background:var(--accent-soft); color:var(--accent); border-radius:4px; padding:1px 6px; }
+  .shape{ color:var(--ink-dim); }
+  .arrow{ color:var(--accent); padding:0 4px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 48px; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<div class="page">
+  <p class="kicker">Traced forward pass — tiny-shakespeare</p>
+  <h1>Live Computation Graph</h1>
+  <dl class="meta">
+    <div><dt>Prompt</dt><dd>ROMEO:</dd></div>
+    <div><dt>Input tokens</dt><dd>6</dd></div>
+    <div><dt>Forward pass</dt><dd>319.36 ms</dd></div>
+    <div><dt>Device</dt><dd>cuda</dd></div>
+    <div><dt>Modules traced</dt><dd>28</dd></div>
+    <div><dt>Traced</dt><dd>2026-09-14T10:29:52</dd></div>
+  </dl>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Module</th><th>Type</th><th>Input shape</th><th></th><th>Output shape</th><th>Params</th></tr></thead>
+      <tbody>
+        <tr class=""><td class="order">1</td><td class="name">token_embedding</td><td><span class="typechip">Embedding</span></td><td class="shape">1×6</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>24,960</td></tr>
+        <tr class=""><td class="order">2</td><td class="name">position_embedding</td><td><span class="typechip">Embedding</span></td><td class="shape">6</td><td class="arrow">&rarr;</td><td class="shape">6×384</td><td>98,304</td></tr>
+        <tr class=""><td class="order">3</td><td class="name">block0.ln1</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">4</td><td class="name">block0.attn</td><td><span class="typechip">MultiHeadAttention</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>590,208</td></tr>
+        <tr class=""><td class="order">5</td><td class="name">block0.ln2</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">6</td><td class="name">block0.ffwd</td><td><span class="typechip">FeedForward</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>1,181,568</td></tr>
+        <tr class="band"><td class="order">7</td><td class="name">block1.ln1</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class="band"><td class="order">8</td><td class="name">block1.attn</td><td><span class="typechip">MultiHeadAttention</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>590,208</td></tr>
+        <tr class="band"><td class="order">9</td><td class="name">block1.ln2</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class="band"><td class="order">10</td><td class="name">block1.ffwd</td><td><span class="typechip">FeedForward</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>1,181,568</td></tr>
+        <tr class=""><td class="order">11</td><td class="name">block2.ln1</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">12</td><td class="name">block2.attn</td><td><span class="typechip">MultiHeadAttention</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>590,208</td></tr>
+        <tr class=""><td class="order">13</td><td class="name">block2.ln2</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">14</td><td class="name">block2.ffwd</td><td><span class="typechip">FeedForward</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>1,181,568</td></tr>
+        <tr class="band"><td class="order">15</td><td class="name">block3.ln1</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class="band"><td class="order">16</td><td class="name">block3.attn</td><td><span class="typechip">MultiHeadAttention</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>590,208</td></tr>
+        <tr class="band"><td class="order">17</td><td class="name">block3.ln2</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class="band"><td class="order">18</td><td class="name">block3.ffwd</td><td><span class="typechip">FeedForward</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>1,181,568</td></tr>
+        <tr class=""><td class="order">19</td><td class="name">block4.ln1</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">20</td><td class="name">block4.attn</td><td><span class="typechip">MultiHeadAttention</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>590,208</td></tr>
+        <tr class=""><td class="order">21</td><td class="name">block4.ln2</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">22</td><td class="name">block4.ffwd</td><td><span class="typechip">FeedForward</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>1,181,568</td></tr>
+        <tr class="band"><td class="order">23</td><td class="name">block5.ln1</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class="band"><td class="order">24</td><td class="name">block5.attn</td><td><span class="typechip">MultiHeadAttention</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>590,208</td></tr>
+        <tr class="band"><td class="order">25</td><td class="name">block5.ln2</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class="band"><td class="order">26</td><td class="name">block5.ffwd</td><td><span class="typechip">FeedForward</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>1,181,568</td></tr>
+        <tr class=""><td class="order">27</td><td class="name">ln_f</td><td><span class="typechip">LayerNorm</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×384</td><td>768</td></tr>
+        <tr class=""><td class="order">28</td><td class="name">lm_head</td><td><span class="typechip">Linear</span></td><td class="shape">1×6×384</td><td class="arrow">&rarr;</td><td class="shape">1×6×65</td><td>25,025</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figcaption>Every row is a real <code>nn.Module</code> that fired during this exact forward pass, in the order it fired, with the actual tensor shapes it saw — captured via <code>register_forward_hook</code>, not diagrammed by hand. Shaded bands mark one transformer block each.</figcaption>
+</div>

@@ -1,0 +1,109 @@
+<title>The Next Letter</title>
+<style>
+  :root{{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }}
+  @media (prefers-color-scheme: dark){{
+    :root:not([data-theme="light"]){{
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }}
+  }}
+  :root[data-theme="dark"]{{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }}
+  *{{box-sizing:border-box;}}
+  body{{ background:var(--paper); color:var(--ink); font-family:var(--sans); }}
+  .page{{ max-width:720px; margin:0 auto; padding:52px 24px 72px; }}
+  .kicker{{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px; }}
+  h1{{ font-size:clamp(34px,7vw,50px); margin:0 0 18px; font-weight:700; text-wrap:balance; line-height:1.05; }}
+  .dek{{ font-size:18px; color:var(--ink-dim); max-width:56ch; line-height:1.6; margin:0 0 20px; }}
+  .recap{{ background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--ink-dim); border-radius:0 10px 10px 0; padding:16px 20px; font-size:14.5px; line-height:1.6; color:var(--ink-dim); margin:0 0 44px; }}
+  .recap a{{ color:var(--ink); }}
+
+  section{{ margin:0 0 48px; }}
+  .stepnum{{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--ink-dim); font-family:var(--mono); font-size:14px; margin-bottom:12px; }}
+  .stepnum.yes{{ border-color:var(--accent); color:var(--accent); }}
+  h2{{ font-size:26px; margin:0 0 14px; font-weight:700; line-height:1.2; }}
+  p{{ font-size:17px; line-height:1.65; margin:0 0 16px; max-width:58ch; }}
+  p strong{{ color:var(--ink); }}
+  .analogy{{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:18px 22px; font-size:16px; line-height:1.6; color:var(--ink-dim); margin:18px 0; }}
+  .analogy b{{ color:var(--ink); }}
+
+  .dialstrip{{ display:grid; grid-template-columns:repeat(32,1fr); gap:2px; margin:20px 0; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; padding:8px; background:var(--paper-raised); }}
+  .dcell{{ aspect-ratio:1; border-radius:2px; }}
+
+  .probbars{{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:18px 22px; margin:20px 0; }}
+  .probrow{{ display:grid; grid-template-columns:50px 1fr 90px; align-items:center; gap:12px; padding:6px 0; }}
+  .probrow .ch{{ font-family:var(--mono); font-size:18px; text-align:center; }}
+  .probtrack{{ background:var(--line); border-radius:3px; height:16px; overflow:hidden; }}
+  .probfill{{ background:var(--accent); height:100%; }}
+  .probpct{{ font-family:var(--mono); font-size:13px; text-align:right; color:var(--ink-dim); }}
+
+  .outcome{{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:16px 20px; font-size:16px; margin:18px 0; }}
+  .outcome strong{{ font-family:var(--mono); }}
+
+  .punchline{{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:28px 30px; margin-top:12px; }}
+  .punchline h2{{ margin-bottom:12px; }}
+  .punchline p{{ font-size:17px; max-width:none; }}
+  .punchline p:last-child{{ margin-bottom:0; }}
+
+  @media (max-width:560px){{
+    .page{{ padding:36px 16px 56px; }}
+    .dialstrip{{ grid-template-columns:repeat(16,1fr); }}
+    .probrow{{ grid-template-columns:36px 1fr 76px; }}
+  }}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">A plain-language explainer, part two</p>
+  <h1>The Next Letter</h1>
+  <p class="dek">Last time, we showed you 384 real numbers from our tiny AI with no dictionary for what they mean. Here's what those numbers turn into next &mdash; and it's a more honest ending than "nobody knows anything."</p>
+  <div class="recap">Quick recap from <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials</a>: our AI turns letters into numbers using a list it can't be wrong about (a real dictionary, 65 entries). Then it does math that produces 384 more numbers &mdash; real, but with no list telling you what any of them mean. This page picks up right there.</div>
+
+  <section>
+    <div class="stepnum">1</div>
+    <h2>Where we left off: 384 mystery numbers</h2>
+    <p>Same AI, same word &mdash; <strong>"ROMEO:"</strong> &mdash; same 384 real numbers, freshly captured. No labels, same as before:</p>
+    <div class="dialstrip">
+      {dial_html}
+    </div>
+  </section>
+
+  <section>
+    <div class="stepnum yes">2</div>
+    <h2>The AI squeezes them back down</h2>
+    <p>Here's the part we didn't show you last time. The AI doesn't stop at 384 mystery numbers. It runs them through one more fixed piece of math, and out comes a brand new list &mdash; only this one is exactly <strong>{n_letters} numbers long</strong>. The same length as our original letter dictionary. That's not a coincidence &mdash; the AI was built so it always lines up that way, one number per letter it knows.</p>
+    <p>Turn those {n_letters} numbers into percentages, and here's what you get &mdash; the AI's real, exact odds for what letter comes after <strong>"{prompt}"</strong>:</p>
+    <div class="probbars">
+      {bars_html}
+    </div>
+    <p>This list <strong>does</strong> have a key &mdash; the same one from step one. Slot 0 is always "newline," no matter what. So even though we can't read the 384 numbers that led here, we can read this list perfectly. We know exactly what each number means and exactly how likely it is.</p>
+  </section>
+
+  <section>
+    <div class="stepnum yes">3</div>
+    <h2>A weighted lottery, not a certainty</h2>
+    <p>The AI doesn't always take the top choice. It runs a weighted lottery: a newline with a {winner_pct}% chance will almost always win &mdash; but "almost always" isn't "always." Elsewhere in this project, watching the same AI write a longer sentence, it once landed on a letter that only had a <strong>3.6% chance</strong> &mdash; a real long shot, drawn fair and square.</p>
+    <div class="outcome">This time: the lottery landed on <strong>'{winner}'</strong>, same as the top pick. No drama &mdash; but it could have gone another way, and sometimes, elsewhere, it does.</div>
+    <div class="analogy">Think of it like a raffle with {n_letters} tickets in a box, but the tickets aren't evenly split &mdash; one ticket type fills {winner_pct}% of the box, and the AI drops in the leftover tickets in whatever tiny amounts its math worked out. Someone reaches in and pulls one. You can watch exactly how the box was filled. You just can't see, by looking at the 384 numbers alone, <em>why</em> the AI decided to fill it that way.</div>
+  </section>
+
+  <div class="punchline">
+    <h2>The full loop</h2>
+    <p><strong>Dictionary in &rarr; unlabeled math &rarr; dictionary out.</strong> Both ends of this process are things we can read perfectly: the letters going in, and the exact odds coming out. What happens between them &mdash; the 384 numbers that turned "ROMEO:" into a {winner_pct}% preference for a newline &mdash; is real, watchable, and still has no dictionary. That's the honest shape of the mystery: not "the AI's decision is unknowable," but "we can see the decision and its odds exactly, and still not read the reasoning that produced them."</p>
+  </div>
+</div>

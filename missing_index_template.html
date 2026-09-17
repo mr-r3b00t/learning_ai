@@ -1,0 +1,109 @@
+<title>The Missing Index</title>
+<style>
+  :root{{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }}
+  @media (prefers-color-scheme: dark){{
+    :root:not([data-theme="light"]){{
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }}
+  }}
+  :root[data-theme="dark"]{{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }}
+  *{{box-sizing:border-box;}}
+  body{{ background:var(--paper); color:var(--ink); font-family:var(--sans); }}
+  .page{{ max-width:760px; margin:0 auto; padding:48px 24px 64px; }}
+  .kicker{{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }}
+  h1{{ font-size:clamp(32px,6vw,46px); margin:0 0 14px; font-weight:700; text-wrap:balance; }}
+  .dek{{ font-size:15.5px; color:var(--ink-dim); max-width:64ch; line-height:1.65; margin:0 0 36px; }}
+
+  section{{ margin:0 0 40px; }}
+  .label{{ font-family:var(--cond); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:0 0 8px; }}
+  .label.no{{ color:var(--flag); }}
+  h2{{ font-size:22px; margin:0 0 10px; font-weight:700; }}
+  p{{ font-size:14.5px; line-height:1.65; margin:0 0 14px; max-width:62ch; }}
+  p code{{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:0 3px; border-radius:3px; }}
+
+  .tgrid{{ display:grid; grid-template-columns:repeat(13,1fr); gap:4px; margin:16px 0; }}
+  .tcell{{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:5px; padding:5px 2px; display:flex; flex-direction:column; align-items:center; gap:1px; }}
+  .tid{{ font-family:var(--mono); font-size:9px; color:var(--ink-dim); }}
+  .tch{{ font-family:var(--mono); font-size:13px; }}
+
+  .heatstrip{{ display:grid; grid-template-columns:repeat(48,1fr); gap:1px; margin:16px 0; border:1px solid var(--line-strong); border-radius:6px; overflow:hidden; padding:6px; background:var(--paper-raised); }}
+  .hcell{{ aspect-ratio:1; border-radius:1px; }}
+
+  .table-wrap{{ overflow-x:auto; border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); margin:16px 0; }}
+  table{{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; min-width:380px; }}
+  thead th{{ text-align:left; font-family:var(--cond); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); padding:8px 14px; border-bottom:1px solid var(--line-strong); }}
+  tbody td{{ padding:6px 14px; border-bottom:1px solid var(--line); }}
+  td.dim{{ color:var(--ink-dim); }}
+  td.val{{ color:var(--ink); font-variant-numeric:tabular-nums; }}
+  td.meaning{{ color:var(--flag); text-align:center; }}
+
+  .verdict{{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:24px 26px; margin-top:8px; }}
+  .verdict h2{{ margin-bottom:14px; }}
+  .verdict p:last-child{{ margin-bottom:0; }}
+
+  .meta{{ display:flex; gap:20px; flex-wrap:wrap; font-family:var(--mono); font-size:12px; color:var(--ink-dim); margin:0 0 8px; }}
+
+  @media (max-width:560px){{
+    .page{{ padding:32px 16px 48px; }}
+    .tgrid{{ grid-template-columns:repeat(8,1fr); }}
+    .heatstrip{{ grid-template-columns:repeat(24,1fr); }}
+  }}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">On monitoring, tokens, and hidden states &mdash; tiny-shakespeare</p>
+  <h1>The Missing Index</h1>
+  <p class="dek">Every page in this project that "traces" or "monitors" something real does it by reading a key someone actually wrote down. Here is one that exists, real and complete, next to one that doesn't &mdash; both pulled from the same real forward pass on the same six letters: <code>ROMEO:</code></p>
+
+  <section>
+    <p class="label">Has a key</p>
+    <h2>The tokenizer's index</h2>
+    <p><code>CharTokenizer</code>'s lookup table, in full &mdash; all {n_tokens} entries, every one of them. Every id maps to exactly one character. Every character maps to exactly one id. Nothing is inferred; nothing is missing.</p>
+    <div class="tgrid">
+      {token_html}
+    </div>
+    <p>This table is <em>why</em> every page in this project could say "token 43 means <code>e</code>" and mean it literally. The key was written by hand, once, before the model ever saw a single example &mdash; it doesn't depend on training, doesn't drift, doesn't need interpreting.</p>
+  </section>
+
+  <section>
+    <p class="label no">Has no key</p>
+    <h2>A hidden state, mid-sentence</h2>
+    <p>Same prompt, same forward pass. This is the real output of block 0's attention layer, at the last position &mdash; the point representing <code>:</code>, about to predict what comes after <code>ROMEO:</code>. {n_dims} real numbers, captured the same way every other number in this project was captured. Every cell below is genuine:</p>
+    <div class="heatstrip">
+      {heat_html}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dimension</th><th>Real value</th><th>What it means</th></tr></thead>
+        <tbody>
+        {sample_html}
+        </tbody>
+      </table>
+    </div>
+    <p>Copper is positive, red is negative, brightness is magnitude &mdash; that's a real visualization of real numbers. It is not a translation. There is no row anywhere that says what dimension 6 <em>represents</em>, because no such row was ever written. Training never produced one; nothing requires one to exist.</p>
+  </section>
+
+  <div class="verdict">
+    <h2>So when this project says "monitor"</h2>
+    <p>Everything this project has genuinely traced &mdash; token ids, <code>ggml</code> op names, CUDA kernel names, sampling probabilities &mdash; sits on one side of a real line: things with a key. We know exactly what <code>MUL_MAT</code> means, exactly what token 43 means, exactly what a 3.6% sampling probability means, because a legend exists for each of them, written by a person or fixed by the math itself.</p>
+    <p>The {n_dims} numbers above sit on the other side. They are just as real, just as capturable, just as honestly reported &mdash; and they mean nothing we can currently read, because the index that would let us read them was never written and doesn't fall out of training as a byproduct. Calling that gap "reasoning" and calling our access to it "monitoring" borrows the vocabulary of a process we can actually watch, and lends it to one we can only watch the outside of.</p>
+  </div>
+</div>

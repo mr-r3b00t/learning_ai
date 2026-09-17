@@ -1,0 +1,571 @@
+<title>The Missing Index</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:760px; margin:0 auto; padding:48px 24px 64px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(32px,6vw,46px); margin:0 0 14px; font-weight:700; text-wrap:balance; }
+  .dek{ font-size:15.5px; color:var(--ink-dim); max-width:64ch; line-height:1.65; margin:0 0 36px; }
+
+  section{ margin:0 0 40px; }
+  .label{ font-family:var(--cond); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:0 0 8px; }
+  .label.no{ color:var(--flag); }
+  h2{ font-size:22px; margin:0 0 10px; font-weight:700; }
+  p{ font-size:14.5px; line-height:1.65; margin:0 0 14px; max-width:62ch; }
+  p code{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:0 3px; border-radius:3px; }
+
+  .tgrid{ display:grid; grid-template-columns:repeat(13,1fr); gap:4px; margin:16px 0; }
+  .tcell{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:5px; padding:5px 2px; display:flex; flex-direction:column; align-items:center; gap:1px; }
+  .tid{ font-family:var(--mono); font-size:9px; color:var(--ink-dim); }
+  .tch{ font-family:var(--mono); font-size:13px; }
+
+  .heatstrip{ display:grid; grid-template-columns:repeat(48,1fr); gap:1px; margin:16px 0; border:1px solid var(--line-strong); border-radius:6px; overflow:hidden; padding:6px; background:var(--paper-raised); }
+  .hcell{ aspect-ratio:1; border-radius:1px; }
+
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); margin:16px 0; }
+  table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; min-width:380px; }
+  thead th{ text-align:left; font-family:var(--cond); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); padding:8px 14px; border-bottom:1px solid var(--line-strong); }
+  tbody td{ padding:6px 14px; border-bottom:1px solid var(--line); }
+  td.dim{ color:var(--ink-dim); }
+  td.val{ color:var(--ink); font-variant-numeric:tabular-nums; }
+  td.meaning{ color:var(--flag); text-align:center; }
+
+  .verdict{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:24px 26px; margin-top:8px; }
+  .verdict h2{ margin-bottom:14px; }
+  .verdict p:last-child{ margin-bottom:0; }
+
+  .meta{ display:flex; gap:20px; flex-wrap:wrap; font-family:var(--mono); font-size:12px; color:var(--ink-dim); margin:0 0 8px; }
+
+  @media (max-width:560px){
+    .page{ padding:32px 16px 48px; }
+    .tgrid{ grid-template-columns:repeat(8,1fr); }
+    .heatstrip{ grid-template-columns:repeat(24,1fr); }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">On monitoring, tokens, and hidden states &mdash; tiny-shakespeare</p>
+  <h1>The Missing Index</h1>
+  <p class="dek">Every page in this project that "traces" or "monitors" something real does it by reading a key someone actually wrote down. Here is one that exists, real and complete, next to one that doesn't &mdash; both pulled from the same real forward pass on the same six letters: <code>ROMEO:</code></p>
+
+  <section>
+    <p class="label">Has a key</p>
+    <h2>The tokenizer's index</h2>
+    <p><code>CharTokenizer</code>'s lookup table, in full &mdash; all 65 entries, every one of them. Every id maps to exactly one character. Every character maps to exactly one id. Nothing is inferred; nothing is missing.</p>
+    <div class="tgrid">
+      <div class="tcell"><span class="tid">0</span><span class="tch">\n</span></div>
+      <div class="tcell"><span class="tid">1</span><span class="tch">␣</span></div>
+      <div class="tcell"><span class="tid">2</span><span class="tch">!</span></div>
+      <div class="tcell"><span class="tid">3</span><span class="tch">$</span></div>
+      <div class="tcell"><span class="tid">4</span><span class="tch">&</span></div>
+      <div class="tcell"><span class="tid">5</span><span class="tch">'</span></div>
+      <div class="tcell"><span class="tid">6</span><span class="tch">,</span></div>
+      <div class="tcell"><span class="tid">7</span><span class="tch">-</span></div>
+      <div class="tcell"><span class="tid">8</span><span class="tch">.</span></div>
+      <div class="tcell"><span class="tid">9</span><span class="tch">3</span></div>
+      <div class="tcell"><span class="tid">10</span><span class="tch">:</span></div>
+      <div class="tcell"><span class="tid">11</span><span class="tch">;</span></div>
+      <div class="tcell"><span class="tid">12</span><span class="tch">?</span></div>
+      <div class="tcell"><span class="tid">13</span><span class="tch">A</span></div>
+      <div class="tcell"><span class="tid">14</span><span class="tch">B</span></div>
+      <div class="tcell"><span class="tid">15</span><span class="tch">C</span></div>
+      <div class="tcell"><span class="tid">16</span><span class="tch">D</span></div>
+      <div class="tcell"><span class="tid">17</span><span class="tch">E</span></div>
+      <div class="tcell"><span class="tid">18</span><span class="tch">F</span></div>
+      <div class="tcell"><span class="tid">19</span><span class="tch">G</span></div>
+      <div class="tcell"><span class="tid">20</span><span class="tch">H</span></div>
+      <div class="tcell"><span class="tid">21</span><span class="tch">I</span></div>
+      <div class="tcell"><span class="tid">22</span><span class="tch">J</span></div>
+      <div class="tcell"><span class="tid">23</span><span class="tch">K</span></div>
+      <div class="tcell"><span class="tid">24</span><span class="tch">L</span></div>
+      <div class="tcell"><span class="tid">25</span><span class="tch">M</span></div>
+      <div class="tcell"><span class="tid">26</span><span class="tch">N</span></div>
+      <div class="tcell"><span class="tid">27</span><span class="tch">O</span></div>
+      <div class="tcell"><span class="tid">28</span><span class="tch">P</span></div>
+      <div class="tcell"><span class="tid">29</span><span class="tch">Q</span></div>
+      <div class="tcell"><span class="tid">30</span><span class="tch">R</span></div>
+      <div class="tcell"><span class="tid">31</span><span class="tch">S</span></div>
+      <div class="tcell"><span class="tid">32</span><span class="tch">T</span></div>
+      <div class="tcell"><span class="tid">33</span><span class="tch">U</span></div>
+      <div class="tcell"><span class="tid">34</span><span class="tch">V</span></div>
+      <div class="tcell"><span class="tid">35</span><span class="tch">W</span></div>
+      <div class="tcell"><span class="tid">36</span><span class="tch">X</span></div>
+      <div class="tcell"><span class="tid">37</span><span class="tch">Y</span></div>
+      <div class="tcell"><span class="tid">38</span><span class="tch">Z</span></div>
+      <div class="tcell"><span class="tid">39</span><span class="tch">a</span></div>
+      <div class="tcell"><span class="tid">40</span><span class="tch">b</span></div>
+      <div class="tcell"><span class="tid">41</span><span class="tch">c</span></div>
+      <div class="tcell"><span class="tid">42</span><span class="tch">d</span></div>
+      <div class="tcell"><span class="tid">43</span><span class="tch">e</span></div>
+      <div class="tcell"><span class="tid">44</span><span class="tch">f</span></div>
+      <div class="tcell"><span class="tid">45</span><span class="tch">g</span></div>
+      <div class="tcell"><span class="tid">46</span><span class="tch">h</span></div>
+      <div class="tcell"><span class="tid">47</span><span class="tch">i</span></div>
+      <div class="tcell"><span class="tid">48</span><span class="tch">j</span></div>
+      <div class="tcell"><span class="tid">49</span><span class="tch">k</span></div>
+      <div class="tcell"><span class="tid">50</span><span class="tch">l</span></div>
+      <div class="tcell"><span class="tid">51</span><span class="tch">m</span></div>
+      <div class="tcell"><span class="tid">52</span><span class="tch">n</span></div>
+      <div class="tcell"><span class="tid">53</span><span class="tch">o</span></div>
+      <div class="tcell"><span class="tid">54</span><span class="tch">p</span></div>
+      <div class="tcell"><span class="tid">55</span><span class="tch">q</span></div>
+      <div class="tcell"><span class="tid">56</span><span class="tch">r</span></div>
+      <div class="tcell"><span class="tid">57</span><span class="tch">s</span></div>
+      <div class="tcell"><span class="tid">58</span><span class="tch">t</span></div>
+      <div class="tcell"><span class="tid">59</span><span class="tch">u</span></div>
+      <div class="tcell"><span class="tid">60</span><span class="tch">v</span></div>
+      <div class="tcell"><span class="tid">61</span><span class="tch">w</span></div>
+      <div class="tcell"><span class="tid">62</span><span class="tch">x</span></div>
+      <div class="tcell"><span class="tid">63</span><span class="tch">y</span></div>
+      <div class="tcell"><span class="tid">64</span><span class="tch">z</span></div>
+    </div>
+    <p>This table is <em>why</em> every page in this project could say "token 43 means <code>e</code>" and mean it literally. The key was written by hand, once, before the model ever saw a single example &mdash; it doesn't depend on training, doesn't drift, doesn't need interpreting.</p>
+  </section>
+
+  <section>
+    <p class="label no">Has no key</p>
+    <h2>A hidden state, mid-sentence</h2>
+    <p>Same prompt, same forward pass. This is the real output of block 0's attention layer, at the last position &mdash; the point representing <code>:</code>, about to predict what comes after <code>ROMEO:</code>. 384 real numbers, captured the same way every other number in this project was captured. Every cell below is genuine:</p>
+    <div class="heatstrip">
+      <div class="hcell" style="background:var(--flag);opacity:0.665" title="dim 0: -0.9817"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.531" title="dim 1: 0.7252"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.666" title="dim 2: 0.9822"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.157" title="dim 3: 0.0131"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.541" title="dim 4: 0.7455"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.495" title="dim 5: -0.6567"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.204" title="dim 6: -0.1021"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.448" title="dim 7: -0.5676"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.536" title="dim 8: 0.7357"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.351" title="dim 9: 0.3820"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.233" title="dim 10: 0.1587"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.323" title="dim 11: 0.3303"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.190" title="dim 12: -0.0754"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.231" title="dim 13: -0.1552"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.564" title="dim 14: 0.7876"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.229" title="dim 15: -0.1495"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.217" title="dim 16: 0.1282"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.537" title="dim 17: 0.7361"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.376" title="dim 18: -0.4305"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.218" title="dim 19: 0.1290"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.204" title="dim 20: 0.1031"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.266" title="dim 21: -0.2208"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.407" title="dim 22: -0.4900"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.380" title="dim 23: 0.4381"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.440" title="dim 24: 0.5521"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.299" title="dim 25: 0.2839"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.317" title="dim 26: 0.3172"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.228" title="dim 27: -0.1487"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.400" title="dim 28: -0.4764"></div>
+      <div class="hcell" style="background:var(--flag);opacity:1.000" title="dim 29: -1.6188"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.165" title="dim 30: 0.0286"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.284" title="dim 31: -0.2552"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.246" title="dim 32: 0.1835"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.261" title="dim 33: 0.2121"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.432" title="dim 34: -0.5372"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.465" title="dim 35: -0.5994"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.320" title="dim 36: -0.3244"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.211" title="dim 37: 0.1159"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.215" title="dim 38: -0.1246"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.296" title="dim 39: -0.2777"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.399" title="dim 40: 0.4741"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.540" title="dim 41: -0.7419"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.279" title="dim 42: 0.2449"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.391" title="dim 43: -0.4583"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.278" title="dim 44: -0.2430"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.662" title="dim 45: -0.9753"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.586" title="dim 46: 0.8294"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.191" title="dim 47: -0.0787"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.454" title="dim 48: 0.5785"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.469" title="dim 49: 0.6072"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.257" title="dim 50: 0.2044"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.283" title="dim 51: -0.2530"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.281" title="dim 52: 0.2503"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.288" title="dim 53: -0.2632"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.538" title="dim 54: 0.7389"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.181" title="dim 55: -0.0585"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.231" title="dim 56: -0.1534"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.348" title="dim 57: 0.3768"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.550" title="dim 58: 0.7609"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.368" title="dim 59: 0.4159"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.385" title="dim 60: -0.4476"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.161" title="dim 61: -0.0205"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.262" title="dim 62: 0.2124"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.190" title="dim 63: -0.0768"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.383" title="dim 64: 0.4442"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.247" title="dim 65: 0.1851"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.387" title="dim 66: -0.4517"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.284" title="dim 67: 0.2543"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.316" title="dim 68: 0.3164"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.385" title="dim 69: -0.4475"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.558" title="dim 70: 0.7767"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.453" title="dim 71: -0.5775"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.184" title="dim 72: 0.0655"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.217" title="dim 73: 0.1277"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.364" title="dim 74: -0.4069"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.359" title="dim 75: -0.3990"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.248" title="dim 76: -0.1860"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.166" title="dim 77: 0.0308"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.611" title="dim 78: 0.8779"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.598" title="dim 79: 0.8529"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.497" title="dim 80: 0.6603"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.676" title="dim 81: -1.0026"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.230" title="dim 82: -0.1531"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.522" title="dim 83: 0.7084"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.500" title="dim 84: 0.6671"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.247" title="dim 85: -0.1846"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.448" title="dim 86: -0.5684"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.712" title="dim 87: 1.0698"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.176" title="dim 88: -0.0503"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.233" title="dim 89: 0.1586"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.379" title="dim 90: 0.4354"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.296" title="dim 91: 0.2782"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.281" title="dim 92: -0.2503"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.592" title="dim 93: -0.8413"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.385" title="dim 94: 0.4479"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.197" title="dim 95: -0.0902"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.419" title="dim 96: 0.5114"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.237" title="dim 97: 0.1660"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.190" title="dim 98: -0.0762"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.213" title="dim 99: 0.1201"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.218" title="dim 100: 0.1288"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.292" title="dim 101: 0.2701"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.675" title="dim 102: -1.0000"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.415" title="dim 103: -0.5037"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.534" title="dim 104: 0.7310"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.513" title="dim 105: -0.6912"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.277" title="dim 106: 0.2415"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.521" title="dim 107: -0.7058"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.187" title="dim 108: 0.0702"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.189" title="dim 109: -0.0737"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.277" title="dim 110: -0.2420"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.189" title="dim 111: -0.0744"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.355" title="dim 112: -0.3904"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.161" title="dim 113: -0.0214"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.162" title="dim 114: 0.0219"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.292" title="dim 115: -0.2695"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.305" title="dim 116: 0.2949"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.684" title="dim 117: 1.0178"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.210" title="dim 118: 0.1148"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.393" title="dim 119: -0.4621"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.160" title="dim 120: 0.0187"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.190" title="dim 121: -0.0757"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.391" title="dim 122: 0.4581"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.368" title="dim 123: 0.4149"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.515" title="dim 124: 0.6947"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.423" title="dim 125: -0.5199"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.184" title="dim 126: 0.0649"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.232" title="dim 127: 0.1560"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.412" title="dim 128: 0.4981"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.362" title="dim 129: -0.4039"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.605" title="dim 130: -0.8673"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.472" title="dim 131: 0.6136"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.220" title="dim 132: -0.1324"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.163" title="dim 133: -0.0254"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.332" title="dim 134: -0.3465"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.216" title="dim 135: 0.1258"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.293" title="dim 136: 0.2718"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.566" title="dim 137: -0.7920"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.306" title="dim 138: 0.2971"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.516" title="dim 139: -0.6979"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.412" title="dim 140: -0.4991"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.636" title="dim 141: 0.9251"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.187" title="dim 142: 0.0714"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.177" title="dim 143: -0.0514"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.361" title="dim 144: -0.4010"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.303" title="dim 145: -0.2905"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.325" title="dim 146: -0.3326"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.382" title="dim 147: 0.4419"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.521" title="dim 148: 0.7064"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.536" title="dim 149: 0.7344"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.333" title="dim 150: -0.3484"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.810" title="dim 151: -1.2577"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.445" title="dim 152: 0.5614"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.647" title="dim 153: 0.9468"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.444" title="dim 154: 0.5595"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.328" title="dim 155: 0.3399"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.190" title="dim 156: 0.0762"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.241" title="dim 157: -0.1739"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.251" title="dim 158: 0.1915"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.290" title="dim 159: 0.2667"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.360" title="dim 160: -0.4002"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.191" title="dim 161: 0.0774"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.218" title="dim 162: -0.1295"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.176" title="dim 163: 0.0490"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.292" title="dim 164: -0.2701"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.192" title="dim 165: 0.0801"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.657" title="dim 166: 0.9659"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.158" title="dim 167: 0.0158"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.198" title="dim 168: -0.0912"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.210" title="dim 169: -0.1133"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.189" title="dim 170: 0.0746"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.612" title="dim 171: 0.8797"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.352" title="dim 172: -0.3843"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.183" title="dim 173: -0.0625"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.245" title="dim 174: -0.1812"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.154" title="dim 175: -0.0072"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.171" title="dim 176: -0.0409"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.181" title="dim 177: 0.0599"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.498" title="dim 178: -0.6634"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.175" title="dim 179: -0.0468"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.284" title="dim 180: -0.2559"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.261" title="dim 181: -0.2107"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.423" title="dim 182: -0.5209"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.467" title="dim 183: -0.6038"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.252" title="dim 184: -0.1938"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.603" title="dim 185: -0.8620"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.289" title="dim 186: -0.2638"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.171" title="dim 187: -0.0397"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.273" title="dim 188: -0.2341"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.449" title="dim 189: -0.5697"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.255" title="dim 190: 0.2000"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.389" title="dim 191: 0.4552"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.403" title="dim 192: 0.4817"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.285" title="dim 193: 0.2574"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.327" title="dim 194: -0.3373"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.217" title="dim 195: 0.1274"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.445" title="dim 196: 0.5620"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.280" title="dim 197: -0.2474"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.290" title="dim 198: -0.2663"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.377" title="dim 199: 0.4328"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.244" title="dim 200: -0.1790"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.371" title="dim 201: 0.4202"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.405" title="dim 202: -0.4857"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.209" title="dim 203: 0.1123"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.226" title="dim 204: 0.1452"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.325" title="dim 205: 0.3331"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.223" title="dim 206: -0.1387"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.156" title="dim 207: -0.0120"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.204" title="dim 208: -0.1026"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.383" title="dim 209: 0.4439"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.212" title="dim 210: -0.1183"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.285" title="dim 211: -0.2566"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.234" title="dim 212: 0.1597"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.428" title="dim 213: -0.5286"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.200" title="dim 214: 0.0955"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.244" title="dim 215: 0.1795"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.204" title="dim 216: -0.1019"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.192" title="dim 217: -0.0795"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.157" title="dim 218: -0.0129"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.582" title="dim 219: -0.8224"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.456" title="dim 220: -0.5831"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.294" title="dim 221: 0.2734"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.233" title="dim 222: 0.1580"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.191" title="dim 223: 0.0774"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.219" title="dim 224: 0.1317"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.312" title="dim 225: 0.3090"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.169" title="dim 226: -0.0356"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.209" title="dim 227: 0.1121"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.320" title="dim 228: 0.3243"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.446" title="dim 229: 0.5641"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.300" title="dim 230: 0.2859"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.253" title="dim 231: -0.1957"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.256" title="dim 232: 0.2027"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.412" title="dim 233: -0.4999"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.438" title="dim 234: -0.5491"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.273" title="dim 235: 0.2348"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.215" title="dim 236: 0.1247"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.612" title="dim 237: -0.8798"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.190" title="dim 238: 0.0758"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.298" title="dim 239: -0.2821"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.203" title="dim 240: -0.1016"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.192" title="dim 241: 0.0805"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.445" title="dim 242: -0.5616"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.230" title="dim 243: -0.1518"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.363" title="dim 244: 0.4057"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.498" title="dim 245: 0.6626"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.526" title="dim 246: -0.7155"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.159" title="dim 247: 0.0181"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.170" title="dim 248: -0.0383"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.261" title="dim 249: -0.2109"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.253" title="dim 250: -0.1955"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.350" title="dim 251: -0.3804"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.575" title="dim 252: -0.8101"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.287" title="dim 253: 0.2606"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.255" title="dim 254: -0.1998"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.458" title="dim 255: -0.5856"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.471" title="dim 256: 0.6120"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.374" title="dim 257: 0.4268"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.366" title="dim 258: 0.4109"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.269" title="dim 259: 0.2263"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.433" title="dim 260: 0.5386"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.202" title="dim 261: 0.0981"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.253" title="dim 262: 0.1956"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.243" title="dim 263: 0.1780"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.206" title="dim 264: -0.1058"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.483" title="dim 265: -0.6334"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.167" title="dim 266: -0.0320"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.445" title="dim 267: 0.5620"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.302" title="dim 268: -0.2904"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.174" title="dim 269: -0.0453"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.487" title="dim 270: 0.6419"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.209" title="dim 271: -0.1119"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.177" title="dim 272: -0.0521"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.348" title="dim 273: 0.3775"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.210" title="dim 274: -0.1145"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.304" title="dim 275: 0.2937"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.289" title="dim 276: -0.2647"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.220" title="dim 277: 0.1341"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.253" title="dim 278: 0.1963"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.395" title="dim 279: 0.4669"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.350" title="dim 280: 0.3803"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.360" title="dim 281: -0.4006"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.238" title="dim 282: -0.1678"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.190" title="dim 283: 0.0756"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.552" title="dim 284: -0.7650"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.335" title="dim 285: 0.3531"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.692" title="dim 286: 1.0329"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.249" title="dim 287: -0.1894"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.317" title="dim 288: 0.3178"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.395" title="dim 289: 0.4663"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.237" title="dim 290: 0.1658"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.287" title="dim 291: -0.2602"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.433" title="dim 292: -0.5394"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.269" title="dim 293: 0.2272"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.380" title="dim 294: 0.4382"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.360" title="dim 295: 0.4006"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.238" title="dim 296: -0.1674"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.312" title="dim 297: -0.3086"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.339" title="dim 298: 0.3596"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.266" title="dim 299: -0.2212"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.320" title="dim 300: 0.3246"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.291" title="dim 301: -0.2686"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.304" title="dim 302: -0.2934"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.264" title="dim 303: 0.2171"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.257" title="dim 304: -0.2044"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.258" title="dim 305: -0.2062"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.213" title="dim 306: 0.1198"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.253" title="dim 307: -0.1967"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.274" title="dim 308: -0.2354"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.305" title="dim 309: -0.2955"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.215" title="dim 310: 0.1240"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.469" title="dim 311: -0.6068"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.462" title="dim 312: 0.5942"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.183" title="dim 313: -0.0623"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.262" title="dim 314: -0.2131"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.163" title="dim 315: -0.0245"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.393" title="dim 316: -0.4620"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.272" title="dim 317: -0.2332"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.283" title="dim 318: 0.2531"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.333" title="dim 319: -0.3494"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.156" title="dim 320: 0.0109"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.380" title="dim 321: -0.4372"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.564" title="dim 322: -0.7888"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.575" title="dim 323: -0.8102"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.204" title="dim 324: 0.1034"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.484" title="dim 325: -0.6351"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.167" title="dim 326: 0.0318"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.540" title="dim 327: -0.7422"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.261" title="dim 328: -0.2108"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.395" title="dim 329: -0.4663"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.485" title="dim 330: 0.6371"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.277" title="dim 331: -0.2428"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.156" title="dim 332: 0.0114"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.226" title="dim 333: 0.1439"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.386" title="dim 334: 0.4485"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.269" title="dim 335: 0.2270"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.401" title="dim 336: -0.4790"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.359" title="dim 337: 0.3975"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.351" title="dim 338: 0.3820"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.360" title="dim 339: 0.3992"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.416" title="dim 340: 0.5060"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.353" title="dim 341: -0.3862"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.668" title="dim 342: -0.9869"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.572" title="dim 343: -0.8039"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.556" title="dim 344: 0.7733"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.374" title="dim 345: 0.4269"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.176" title="dim 346: 0.0503"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.695" title="dim 347: 1.0372"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.221" title="dim 348: -0.1355"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.315" title="dim 349: 0.3135"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.451" title="dim 350: -0.5741"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.903" title="dim 351: -1.4335"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.329" title="dim 352: 0.3409"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.192" title="dim 353: 0.0793"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.241" title="dim 354: -0.1724"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.187" title="dim 355: -0.0696"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.413" title="dim 356: -0.5003"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.299" title="dim 357: -0.2842"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.174" title="dim 358: 0.0462"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.314" title="dim 359: 0.3125"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.408" title="dim 360: 0.4912"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.374" title="dim 361: 0.4273"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.542" title="dim 362: -0.7471"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.187" title="dim 363: -0.0712"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.216" title="dim 364: 0.1251"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.310" title="dim 365: -0.3054"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.163" title="dim 366: -0.0247"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.268" title="dim 367: -0.2243"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.201" title="dim 368: 0.0980"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.295" title="dim 369: 0.2755"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.348" title="dim 370: -0.3776"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.455" title="dim 371: 0.5806"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.524" title="dim 372: -0.7119"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.535" title="dim 373: 0.7335"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.563" title="dim 374: 0.7861"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.557" title="dim 375: 0.7748"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.169" title="dim 376: 0.0366"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.203" title="dim 377: -0.1015"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.533" title="dim 378: -0.7298"></div>
+      <div class="hcell" style="background:var(--accent);opacity:0.185" title="dim 379: 0.0657"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.382" title="dim 380: -0.4411"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.381" title="dim 381: -0.4408"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.211" title="dim 382: -0.1158"></div>
+      <div class="hcell" style="background:var(--flag);opacity:0.306" title="dim 383: -0.2966"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dimension</th><th>Real value</th><th>What it means</th></tr></thead>
+        <tbody>
+        <tr><td class="dim">0</td><td class="val">-0.9817</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">1</td><td class="val">+0.7252</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">2</td><td class="val">+0.9822</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">3</td><td class="val">+0.0131</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">4</td><td class="val">+0.7455</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">5</td><td class="val">-0.6567</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">6</td><td class="val">-0.1021</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">7</td><td class="val">-0.5676</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">8</td><td class="val">+0.7357</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">9</td><td class="val">+0.3820</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">10</td><td class="val">+0.1587</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">11</td><td class="val">+0.3303</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">12</td><td class="val">-0.0754</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">13</td><td class="val">-0.1552</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">14</td><td class="val">+0.7876</td><td class="meaning">&mdash;</td></tr>
+        <tr><td class="dim">15</td><td class="val">-0.1495</td><td class="meaning">&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Copper is positive, red is negative, brightness is magnitude &mdash; that's a real visualization of real numbers. It is not a translation. There is no row anywhere that says what dimension 6 <em>represents</em>, because no such row was ever written. Training never produced one; nothing requires one to exist.</p>
+  </section>
+
+  <div class="verdict">
+    <h2>So when this project says "monitor"</h2>
+    <p>Everything this project has genuinely traced &mdash; token ids, <code>ggml</code> op names, CUDA kernel names, sampling probabilities &mdash; sits on one side of a real line: things with a key. We know exactly what <code>MUL_MAT</code> means, exactly what token 43 means, exactly what a 3.6% sampling probability means, because a legend exists for each of them, written by a person or fixed by the math itself.</p>
+    <p>The 384 numbers above sit on the other side. They are just as real, just as capturable, just as honestly reported &mdash; and they mean nothing we can currently read, because the index that would let us read them was never written and doesn't fall out of training as a byproduct. Calling that gap "reasoning" and calling our access to it "monitoring" borrows the vocabulary of a process we can actually watch, and lends it to one we can only watch the outside of.</p>
+  </div>
+</div>

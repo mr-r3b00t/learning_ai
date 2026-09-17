@@ -1,0 +1,176 @@
+<title>Batch File, Token by Token</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:1040px; margin:0 auto; padding:40px 24px 56px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; font-weight:700; text-wrap:balance; }
+  .sub{ font-size:14.5px; color:var(--ink-dim); max-width:70ch; line-height:1.6; margin:0 0 18px; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:16px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .excerpt{ margin:0 0 20px; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 16px; }
+  .excerpt .src{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); display:block; margin-bottom:6px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:13px; line-height:1.6; white-space:pre-wrap; }
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--ink-dim); }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .graph-wrap{ border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); overflow:hidden; }
+  #network{ width:100%; height:600px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 40px; } #network{ height:440px; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+
+<div class="page">
+  <p class="kicker">Chain-of-thought, token by token &mdash; deepseek-r1:8b</p>
+  <h1>Batch File, Token by Token</h1>
+  <p class="sub">Every branch is a token the model considered while reasoning through &ldquo;create a batch file (minimal) to map a network drive,&rdquo; sized and colored by its real predicted probability. The copper path is what it actually generated.</p>
+  <dl class="meta" id="meta"></dl>
+  <div class="excerpt"><span class="src">prompt</span><pre id="prompttext"></pre></div>
+  <div class="excerpt" id="reasoning-block" style="display:none;"><span class="src">reasoning (as generated, token by token)</span><pre id="reasoningtext"></pre></div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span>chosen (was the top candidate shown)</span>
+    <span><span class="dot" style="background:var(--flag)"></span>chosen (landed outside the shown top-k &mdash; a longer-shot pick)</span>
+    <span><span class="dot" style="background:var(--paper-raised);border:1px solid var(--line-strong)"></span>considered, not chosen</span>
+  </div>
+  <div class="graph-wrap"><div id="network"></div></div>
+  <figcaption>Built with vis-network from a real trace via Ollama's logprobs API: at every step the model's top candidate tokens and their real probabilities were captured, and the next token drawn by the server's own sampling -- not scripted.</figcaption>
+</div>
+
+<script type="application/json" id="trace-data">{"timestamp": "2026-09-14T12:18:22", "model": "deepseek-r1:8b", "prompt": "create a batch file (minimal) to map a network drive", "steps": 59, "topk": 5, "temperature": 0.6, "full_text": "<think>We are going to create a minimal batch file to map a network drive.\n The batch file will use the `net use` command to map a network drive.\n We'll assume we want to map a network share to a drive letter, and we'll use standard parameters.\n\n However, note that", "reasoning": "\nWe are going to create a minimal batch file to map a network drive.\n The batch file will use the `net use` command to map a network drive.\n We'll assume we want to map a network share to a drive letter, and we'll use standard parameters.\n\n However, note that", "answer": "", "usage": {"prompt_tokens": 15, "prompt_tokens_details": {"cached_tokens": 0}, "completion_tokens": 60, "total_tokens": 75}, "trace": [{"step": 0, "candidates": [{"token": "<think>", "prob": 1.0, "char_disp": "<think>"}, {"token": "</think>", "prob": 0.0, "char_disp": "</think>"}, {"token": "vascular", "prob": 0.0, "char_disp": "vascular"}, {"token": "", "prob": 0.0, "char_disp": ""}, {"token": "\u6d41\u308c", "prob": 0.0, "char_disp": "\u6d41\u308c"}], "chosen": {"token": "<think>", "prob": 1.0, "in_topk": true, "char_disp": "<think>"}}, {"step": 1, "candidates": [{"token": "We", "prob": 0.99947, "char_disp": "We"}, {"token": "To", "prob": 0.00023, "char_disp": "To"}, {"token": "The", "prob": 8e-05, "char_disp": "The"}, {"token": "Creating", "prob": 7e-05, "char_disp": "Creating"}, {"token": "Okay", "prob": 5e-05, "char_disp": "Okay"}], "chosen": {"token": "We", "prob": 0.99947, "in_topk": true, "char_disp": "We"}}, {"step": 2, "candidates": [{"token": " are", "prob": 0.99856, "char_disp": " are"}, {"token": " want", "prob": 0.00079, "char_disp": " want"}, {"token": "'ll", "prob": 0.00029, "char_disp": "'ll"}, {"token": " need", "prob": 0.00018, "char_disp": " need"}, {"token": "'re", "prob": 0.00015, "char_disp": "'re"}], "chosen": {"token": " are", "prob": 0.99856, "in_topk": true, "char_disp": " are"}}, {"step": 3, "candidates": [{"token": " creating", "prob": 0.56824, "char_disp": " creating"}, {"token": " going", "prob": 0.42399, "char_disp": " going"}, {"token": " to", "prob": 0.0049, "char_disp": " to"}, {"token": " mapping", "prob": 0.0019, "char_disp": " mapping"}, {"token": " asked", "prob": 0.00043, "char_disp": " asked"}], "chosen": {"token": " going", "prob": 0.42399, "in_topk": true, "char_disp": " going"}}, {"step": 4, "candidates": [{"token": " to", "prob": 1.0, "char_disp": " to"}, {"token": ".com", "prob": 0.0, "char_disp": ".com"}, {"token": " the", "prob": 0.0, "char_disp": " the"}, {"token": "atically", "prob": 0.0, "char_disp": "atically"}, {"token": "ly", "prob": 0.0, "char_disp": "ly"}], "chosen": {"token": " to", "prob": 1.0, "in_topk": true, "char_disp": " to"}}, {"step": 5, "candidates": [{"token": " create", "prob": 0.93841, "char_disp": " create"}, {"token": " map", "prob": 0.03174, "char_disp": " map"}, {"token": " use", "prob": 0.02882, "char_disp": " use"}, {"token": " write", "prob": 0.00101, "char_disp": " write"}, {"token": " connect", "prob": 1e-05, "char_disp": " connect"}], "chosen": {"token": " create", "prob": 0.93841, "in_topk": true, "char_disp": " create"}}, {"step": 6, "candidates": [{"token": " a", "prob": 0.99968, "char_disp": " a"}, {"token": " the", "prob": 0.00029, "char_disp": " the"}, {"token": " an", "prob": 2e-05, "char_disp": " an"}, {"token": " two", "prob": 1e-05, "char_disp": " two"}, {"token": " minimal", "prob": 0.0, "char_disp": " minimal"}], "chosen": {"token": " a", "prob": 0.99968, "in_topk": true, "char_disp": " a"}}, {"step": 7, "candidates": [{"token": " minimal", "prob": 0.93152, "char_disp": " minimal"}, {"token": " batch", "prob": 0.05862, "char_disp": " batch"}, {"token": " simple", "prob": 0.00808, "char_disp": " simple"}, {"token": " very", "prob": 0.00159, "char_disp": " very"}, {"token": " minimalist", "prob": 0.0001, "char_disp": " minimalist"}], "chosen": {"token": " minimal", "prob": 0.93152, "in_topk": true, "char_disp": " minimal"}}, {"step": 8, "candidates": [{"token": " batch", "prob": 0.99996, "char_disp": " batch"}, {"token": " Batch", "prob": 2e-05, "char_disp": " Batch"}, {"token": " .", "prob": 1e-05, "char_disp": " ."}, {"token": " BAT", "prob": 0.0, "char_disp": " BAT"}, {"token": " command", "prob": 0.0, "char_disp": " command"}], "chosen": {"token": " batch", "prob": 0.99996, "in_topk": true, "char_disp": " batch"}}, {"step": 9, "candidates": [{"token": " file", "prob": 0.99977, "char_disp": " file"}, {"token": " script", "prob": 0.00023, "char_disp": " script"}, {"token": "file", "prob": 0.0, "char_disp": "file"}, {"token": "-file", "prob": 0.0, "char_disp": "-file"}, {"token": " command", "prob": 0.0, "char_disp": " command"}], "chosen": {"token": " file", "prob": 0.99977, "in_topk": true, "char_disp": " file"}}, {"step": 10, "candidates": [{"token": " to", "prob": 0.9922, "char_disp": " to"}, {"token": " for", "prob": 0.00343, "char_disp": " for"}, {"token": " that", "prob": 0.00335, "char_disp": " that"}, {"token": " (", "prob": 0.00099, "char_disp": " ("}, {"token": " script", "prob": 1e-05, "char_disp": " script"}], "chosen": {"token": " to", "prob": 0.9922, "in_topk": true, "char_disp": " to"}}, {"step": 11, "candidates": [{"token": " map", "prob": 0.99999, "char_disp": " map"}, {"token": " create", "prob": 0.0, "char_disp": " create"}, {"token": " use", "prob": 0.0, "char_disp": " use"}, {"token": " connect", "prob": 0.0, "char_disp": " connect"}, {"token": " Map", "prob": 0.0, "char_disp": " Map"}], "chosen": {"token": " map", "prob": 0.99999, "in_topk": true, "char_disp": " map"}}, {"step": 12, "candidates": [{"token": " a", "prob": 1.0, "char_disp": " a"}, {"token": " network", "prob": 0.0, "char_disp": " network"}, {"token": " an", "prob": 0.0, "char_disp": " an"}, {"token": " two", "prob": 0.0, "char_disp": " two"}, {"token": " the", "prob": 0.0, "char_disp": " the"}], "chosen": {"token": " a", "prob": 1.0, "in_topk": true, "char_disp": " a"}}, {"step": 13, "candidates": [{"token": " network", "prob": 0.99997, "char_disp": " network"}, {"token": " persistent", "prob": 2e-05, "char_disp": " persistent"}, {"token": " fixed", "prob": 1e-05, "char_disp": " fixed"}, {"token": " Windows", "prob": 0.0, "char_disp": " Windows"}, {"token": " Microsoft", "prob": 0.0, "char_disp": " Microsoft"}], "chosen": {"token": " network", "prob": 0.99997, "in_topk": true, "char_disp": " network"}}, {"step": 14, "candidates": [{"token": " drive", "prob": 1.0, "char_disp": " drive"}, {"token": "drive", "prob": 0.0, "char_disp": "drive"}, {"token": " Drive", "prob": 0.0, "char_disp": " Drive"}, {"token": ".drive", "prob": 0.0, "char_disp": ".drive"}, {"token": "\u9a71\u52a8", "prob": 0.0, "char_disp": "\u9a71\u52a8"}], "chosen": {"token": " drive", "prob": 1.0, "in_topk": true, "char_disp": " drive"}}, {"step": 15, "candidates": [{"token": ".\n", "prob": 0.98321, "char_disp": ".\\n"}, {"token": " using", "prob": 0.00956, "char_disp": " using"}, {"token": " in", "prob": 0.00699, "char_disp": " in"}, {"token": " on", "prob": 7e-05, "char_disp": " on"}, {"token": " for", "prob": 5e-05, "char_disp": " for"}], "chosen": {"token": ".\n", "prob": 0.98321, "in_topk": true, "char_disp": ".\\n"}}, {"step": 16, "candidates": [{"token": " The", "prob": 0.96155, "char_disp": " The"}, {"token": " Steps", "prob": 0.01429, "char_disp": " Steps"}, {"token": " Since", "prob": 0.00703, "char_disp": " Since"}, {"token": " We", "prob": 0.00611, "char_disp": " We"}, {"token": " In", "prob": 0.00399, "char_disp": " In"}], "chosen": {"token": " The", "prob": 0.96155, "in_topk": true, "char_disp": " The"}}, {"step": 17, "candidates": [{"token": " batch", "prob": 0.79906, "char_disp": " batch"}, {"token": " user", "prob": 0.11274, "char_disp": " user"}, {"token": " basic", "prob": 0.04516, "char_disp": " basic"}, {"token": " command", "prob": 0.02549, "char_disp": " command"}, {"token": " script", "prob": 0.00451, "char_disp": " script"}], "chosen": {"token": " batch", "prob": 0.79906, "in_topk": true, "char_disp": " batch"}}, {"step": 18, "candidates": [{"token": " file", "prob": 0.99945, "char_disp": " file"}, {"token": " will", "prob": 0.00039, "char_disp": " will"}, {"token": " script", "prob": 9e-05, "char_disp": " script"}, {"token": " command", "prob": 6e-05, "char_disp": " command"}, {"token": " commands", "prob": 1e-05, "char_disp": " commands"}], "chosen": {"token": " file", "prob": 0.99945, "in_topk": true, "char_disp": " file"}}, {"step": 19, "candidates": [{"token": " will", "prob": 0.85628, "char_disp": " will"}, {"token": " should", "prob": 0.1332, "char_disp": " should"}, {"token": " can", "prob": 0.0073, "char_disp": " can"}, {"token": " uses", "prob": 0.0017, "char_disp": " uses"}, {"token": " must", "prob": 0.00135, "char_disp": " must"}], "chosen": {"token": " will", "prob": 0.85628, "in_topk": true, "char_disp": " will"}}, {"step": 20, "candidates": [{"token": " use", "prob": 0.98815, "char_disp": " use"}, {"token": " take", "prob": 0.00587, "char_disp": " take"}, {"token": " prompt", "prob": 0.00333, "char_disp": " prompt"}, {"token": " be", "prob": 0.00092, "char_disp": " be"}, {"token": " map", "prob": 0.00057, "char_disp": " map"}], "chosen": {"token": " use", "prob": 0.98815, "in_topk": true, "char_disp": " use"}}, {"step": 21, "candidates": [{"token": " the", "prob": 0.99989, "char_disp": " the"}, {"token": " a", "prob": 5e-05, "char_disp": " a"}, {"token": " `", "prob": 2e-05, "char_disp": " `"}, {"token": " either", "prob": 2e-05, "char_disp": " either"}, {"token": " Windows", "prob": 1e-05, "char_disp": " Windows"}], "chosen": {"token": " the", "prob": 0.99989, "in_topk": true, "char_disp": " the"}}, {"step": 22, "candidates": [{"token": " `", "prob": 0.86381, "char_disp": " `"}, {"token": " net", "prob": 0.07831, "char_disp": " net"}, {"token": " NET", "prob": 0.02259, "char_disp": " NET"}, {"token": " '", "prob": 0.01688, "char_disp": " '"}, {"token": " command", "prob": 0.00861, "char_disp": " command"}], "chosen": {"token": " `", "prob": 0.86381, "in_topk": true, "char_disp": " `"}}, {"step": 23, "candidates": [{"token": "net", "prob": 0.98279, "char_disp": "net"}, {"token": "NET", "prob": 0.01709, "char_disp": "NET"}, {"token": "mk", "prob": 5e-05, "char_disp": "mk"}, {"token": "map", "prob": 5e-05, "char_disp": "map"}, {"token": "subst", "prob": 1e-05, "char_disp": "subst"}], "chosen": {"token": "net", "prob": 0.98279, "in_topk": true, "char_disp": "net"}}, {"step": 24, "candidates": [{"token": " use", "prob": 0.99958, "char_disp": " use"}, {"token": " drive", "prob": 0.00032, "char_disp": " drive"}, {"token": "`", "prob": 7e-05, "char_disp": "`"}, {"token": " Use", "prob": 2e-05, "char_disp": " Use"}, {"token": ".exe", "prob": 1e-05, "char_disp": ".exe"}], "chosen": {"token": " use", "prob": 0.99958, "in_topk": true, "char_disp": " use"}}, {"step": 25, "candidates": [{"token": "`", "prob": 1.0, "char_disp": "`"}, {"token": " `", "prob": 0.0, "char_disp": " `"}, {"token": " *", "prob": 0.0, "char_disp": " *"}, {"token": " x", "prob": 0.0, "char_disp": " x"}, {"token": " drive", "prob": 0.0, "char_disp": " drive"}], "chosen": {"token": "`", "prob": 1.0, "in_topk": true, "char_disp": "`"}}, {"step": 26, "candidates": [{"token": " command", "prob": 1.0, "char_disp": " command"}, {"token": "\u547d\u4ee4", "prob": 0.0, "char_disp": "\u547d\u4ee4"}, {"token": " or", "prob": 0.0, "char_disp": " or"}, {"token": " commands", "prob": 0.0, "char_disp": " commands"}, {"token": "command", "prob": 0.0, "char_disp": "command"}], "chosen": {"token": " command", "prob": 1.0, "in_topk": true, "char_disp": " command"}}, {"step": 27, "candidates": [{"token": " to", "prob": 0.72627, "char_disp": " to"}, {"token": ".\n", "prob": 0.17886, "char_disp": ".\\n"}, {"token": ",", "prob": 0.0616, "char_disp": ","}, {"token": ".\n\n", "prob": 0.01701, "char_disp": ".\\n\\n"}, {"token": " which", "prob": 0.00724, "char_disp": " which"}], "chosen": {"token": " to", "prob": 0.72627, "in_topk": true, "char_disp": " to"}}, {"step": 28, "candidates": [{"token": " map", "prob": 0.99591, "char_disp": " map"}, {"token": " connect", "prob": 0.00375, "char_disp": " connect"}, {"token": " establish", "prob": 0.00023, "char_disp": " establish"}, {"token": " assign", "prob": 5e-05, "char_disp": " assign"}, {"token": " create", "prob": 4e-05, "char_disp": " create"}], "chosen": {"token": " map", "prob": 0.99591, "in_topk": true, "char_disp": " map"}}, {"step": 29, "candidates": [{"token": " a", "prob": 0.99796, "char_disp": " a"}, {"token": " the", "prob": 0.00203, "char_disp": " the"}, {"token": " network", "prob": 0.0, "char_disp": " network"}, {"token": " an", "prob": 0.0, "char_disp": " an"}, {"token": " another", "prob": 0.0, "char_disp": " another"}], "chosen": {"token": " a", "prob": 0.99796, "in_topk": true, "char_disp": " a"}}, {"step": 30, "candidates": [{"token": " network", "prob": 0.98395, "char_disp": " network"}, {"token": " local", "prob": 0.00833, "char_disp": " local"}, {"token": " drive", "prob": 0.00656, "char_disp": " drive"}, {"token": " specified", "prob": 0.00071, "char_disp": " specified"}, {"token": " fixed", "prob": 0.00021, "char_disp": " fixed"}], "chosen": {"token": " network", "prob": 0.98395, "in_topk": true, "char_disp": " network"}}, {"step": 31, "candidates": [{"token": " drive", "prob": 0.99885, "char_disp": " drive"}, {"token": " share", "prob": 0.0008, "char_disp": " share"}, {"token": " path", "prob": 0.00028, "char_disp": " path"}, {"token": " location", "prob": 8e-05, "char_disp": " location"}, {"token": "drive", "prob": 0.0, "char_disp": "drive"}], "chosen": {"token": " drive", "prob": 0.99885, "in_topk": true, "char_disp": " drive"}}, {"step": 32, "candidates": [{"token": ".\n", "prob": 0.79493, "char_disp": ".\\n"}, {"token": ".\n\n", "prob": 0.20279, "char_disp": ".\\n\\n"}, {"token": " with", "prob": 0.00119, "char_disp": " with"}, {"token": " letter", "prob": 0.00047, "char_disp": " letter"}, {"token": ",", "prob": 0.00026, "char_disp": ","}], "chosen": {"token": ".\n", "prob": 0.79493, "in_topk": true, "char_disp": ".\\n"}}, {"step": 33, "candidates": [{"token": " We", "prob": 0.98751, "char_disp": " We"}, {"token": " It", "prob": 0.00264, "char_disp": " It"}, {"token": " The", "prob": 0.0019, "char_disp": " The"}, {"token": " Let", "prob": 0.00186, "char_disp": " Let"}, {"token": " Since", "prob": 0.00146, "char_disp": " Since"}], "chosen": {"token": " We", "prob": 0.98751, "in_topk": true, "char_disp": " We"}}, {"step": 34, "candidates": [{"token": " need", "prob": 0.43832, "char_disp": " need"}, {"token": "'ll", "prob": 0.40486, "char_disp": "'ll"}, {"token": " assume", "prob": 0.07671, "char_disp": " assume"}, {"token": " will", "prob": 0.0595, "char_disp": " will"}, {"token": " must", "prob": 0.00955, "char_disp": " must"}], "chosen": {"token": "'ll", "prob": 0.40486, "in_topk": true, "char_disp": "'ll"}}, {"step": 35, "candidates": [{"token": " assume", "prob": 0.5898, "char_disp": " assume"}, {"token": " map", "prob": 0.11777, "char_disp": " map"}, {"token": " need", "prob": 0.1025, "char_disp": " need"}, {"token": " use", "prob": 0.03912, "char_disp": " use"}, {"token": " take", "prob": 0.02664, "char_disp": " take"}], "chosen": {"token": " assume", "prob": 0.5898, "in_topk": true, "char_disp": " assume"}}, {"step": 36, "candidates": [{"token": " we", "prob": 0.50514, "char_disp": " we"}, {"token": " the", "prob": 0.44584, "char_disp": " the"}, {"token": " that", "prob": 0.04525, "char_disp": " that"}, {"token": " minimal", "prob": 0.00234, "char_disp": " minimal"}, {"token": ":\n", "prob": 0.00036, "char_disp": ":\\n"}], "chosen": {"token": " we", "prob": 0.50514, "in_topk": true, "char_disp": " we"}}, {"step": 37, "candidates": [{"token": " want", "prob": 0.78851, "char_disp": " want"}, {"token": " are", "prob": 0.20874, "char_disp": " are"}, {"token": "'re", "prob": 0.00111, "char_disp": "'re"}, {"token": " have", "prob": 0.00069, "char_disp": " have"}, {"token": " need", "prob": 0.0005, "char_disp": " need"}], "chosen": {"token": " want", "prob": 0.78851, "in_topk": true, "char_disp": " want"}}, {"step": 38, "candidates": [{"token": " to", "prob": 0.99986, "char_disp": " to"}, {"token": " a", "prob": 8e-05, "char_disp": " a"}, {"token": " the", "prob": 6e-05, "char_disp": " the"}, {"token": " mapping", "prob": 0.0, "char_disp": " mapping"}, {"token": " persistent", "prob": 0.0, "char_disp": " persistent"}], "chosen": {"token": " to", "prob": 0.99986, "in_topk": true, "char_disp": " to"}}, {"step": 39, "candidates": [{"token": " map", "prob": 0.99968, "char_disp": " map"}, {"token": " create", "prob": 0.00018, "char_disp": " create"}, {"token": " use", "prob": 0.00011, "char_disp": " use"}, {"token": " assign", "prob": 1e-05, "char_disp": " assign"}, {"token": " connect", "prob": 1e-05, "char_disp": " connect"}], "chosen": {"token": " map", "prob": 0.99968, "in_topk": true, "char_disp": " map"}}, {"step": 40, "candidates": [{"token": " a", "prob": 0.96359, "char_disp": " a"}, {"token": " to", "prob": 0.02699, "char_disp": " to"}, {"token": " the", "prob": 0.00682, "char_disp": " the"}, {"token": " it", "prob": 0.00109, "char_disp": " it"}, {"token": " drive", "prob": 0.00106, "char_disp": " drive"}], "chosen": {"token": " a", "prob": 0.96359, "in_topk": true, "char_disp": " a"}}, {"step": 41, "candidates": [{"token": " network", "prob": 0.54479, "char_disp": " network"}, {"token": " drive", "prob": 0.38978, "char_disp": " drive"}, {"token": " persistent", "prob": 0.04156, "char_disp": " persistent"}, {"token": " fixed", "prob": 0.00861, "char_disp": " fixed"}, {"token": " specific", "prob": 0.00454, "char_disp": " specific"}], "chosen": {"token": " network", "prob": 0.54479, "in_topk": true, "char_disp": " network"}}, {"step": 42, "candidates": [{"token": " share", "prob": 0.77307, "char_disp": " share"}, {"token": " drive", "prob": 0.22407, "char_disp": " drive"}, {"token": " path", "prob": 0.00234, "char_disp": " path"}, {"token": " resource", "prob": 0.00029, "char_disp": " resource"}, {"token": " location", "prob": 0.00018, "char_disp": " location"}], "chosen": {"token": " share", "prob": 0.77307, "in_topk": true, "char_disp": " share"}}, {"step": 43, "candidates": [{"token": " to", "prob": 0.98247, "char_disp": " to"}, {"token": " (", "prob": 0.01383, "char_disp": " ("}, {"token": " at", "prob": 0.00107, "char_disp": " at"}, {"token": " from", "prob": 0.00056, "char_disp": " from"}, {"token": ",", "prob": 0.00052, "char_disp": ","}], "chosen": {"token": " to", "prob": 0.98247, "in_topk": true, "char_disp": " to"}}, {"step": 44, "candidates": [{"token": " a", "prob": 0.98659, "char_disp": " a"}, {"token": " the", "prob": 0.01148, "char_disp": " the"}, {"token": " drive", "prob": 0.00169, "char_disp": " drive"}, {"token": " an", "prob": 0.00014, "char_disp": " an"}, {"token": " \"", "prob": 5e-05, "char_disp": " \""}], "chosen": {"token": " a", "prob": 0.98659, "in_topk": true, "char_disp": " a"}}, {"step": 45, "candidates": [{"token": " drive", "prob": 0.92742, "char_disp": " drive"}, {"token": " local", "prob": 0.06573, "char_disp": " local"}, {"token": " fixed", "prob": 0.00383, "char_disp": " fixed"}, {"token": " persistent", "prob": 0.00141, "char_disp": " persistent"}, {"token": " specific", "prob": 0.00105, "char_disp": " specific"}], "chosen": {"token": " drive", "prob": 0.92742, "in_topk": true, "char_disp": " drive"}}, {"step": 46, "candidates": [{"token": " letter", "prob": 0.99998, "char_disp": " letter"}, {"token": " (", "prob": 1e-05, "char_disp": " ("}, {"token": ",", "prob": 1e-05, "char_disp": ","}, {"token": " Z", "prob": 0.0, "char_disp": " Z"}, {"token": "letter", "prob": 0.0, "char_disp": "letter"}], "chosen": {"token": " letter", "prob": 0.99998, "in_topk": true, "char_disp": " letter"}}, {"step": 47, "candidates": [{"token": ",", "prob": 0.80092, "char_disp": ","}, {"token": " (", "prob": 0.16626, "char_disp": " ("}, {"token": " of", "prob": 0.0126, "char_disp": " of"}, {"token": " and", "prob": 0.00622, "char_disp": " and"}, {"token": ".\n", "prob": 0.00412, "char_disp": ".\\n"}], "chosen": {"token": ",", "prob": 0.80092, "in_topk": true, "char_disp": ","}}, {"step": 48, "candidates": [{"token": " and", "prob": 0.64994, "char_disp": " and"}, {"token": " say", "prob": 0.2804, "char_disp": " say"}, {"token": " with", "prob": 0.02902, "char_disp": " with"}, {"token": " for", "prob": 0.01406, "char_disp": " for"}, {"token": " using", "prob": 0.00643, "char_disp": " using"}], "chosen": {"token": " and", "prob": 0.64994, "in_topk": true, "char_disp": " and"}}, {"step": 49, "candidates": [{"token": " we", "prob": 0.94131, "char_disp": " we"}, {"token": " the", "prob": 0.03986, "char_disp": " the"}, {"token": " require", "prob": 0.00268, "char_disp": " require"}, {"token": " that", "prob": 0.00258, "char_disp": " that"}, {"token": " provide", "prob": 0.00247, "char_disp": " provide"}], "chosen": {"token": " we", "prob": 0.94131, "in_topk": true, "char_disp": " we"}}, {"step": 50, "candidates": [{"token": "'ll", "prob": 0.59662, "char_disp": "'ll"}, {"token": " want", "prob": 0.10233, "char_disp": " want"}, {"token": " need", "prob": 0.07995, "char_disp": " need"}, {"token": " might", "prob": 0.07983, "char_disp": " might"}, {"token": " are", "prob": 0.03937, "char_disp": " are"}], "chosen": {"token": "'ll", "prob": 0.59662, "in_topk": true, "char_disp": "'ll"}}, {"step": 51, "candidates": [{"token": " use", "prob": 0.31151, "char_disp": " use"}, {"token": " require", "prob": 0.08754, "char_disp": " require"}, {"token": " set", "prob": 0.08208, "char_disp": " set"}, {"token": " take", "prob": 0.0772, "char_disp": " take"}, {"token": " also", "prob": 0.07394, "char_disp": " also"}], "chosen": {"token": " use", "prob": 0.31151, "in_topk": true, "char_disp": " use"}}, {"step": 52, "candidates": [{"token": " standard", "prob": 0.31218, "char_disp": " standard"}, {"token": " the", "prob": 0.23118, "char_disp": " the"}, {"token": " a", "prob": 0.14121, "char_disp": " a"}, {"token": " common", "prob": 0.11242, "char_disp": " common"}, {"token": " parameters", "prob": 0.03608, "char_disp": " parameters"}], "chosen": {"token": " standard", "prob": 0.31218, "in_topk": true, "char_disp": " standard"}}, {"step": 53, "candidates": [{"token": " parameters", "prob": 0.75198, "char_disp": " parameters"}, {"token": " Windows", "prob": 0.13941, "char_disp": " Windows"}, {"token": " syntax", "prob": 0.0265, "char_disp": " syntax"}, {"token": " error", "prob": 0.01997, "char_disp": " error"}, {"token": " network", "prob": 0.01342, "char_disp": " network"}], "chosen": {"token": " parameters", "prob": 0.75198, "in_topk": true, "char_disp": " parameters"}}, {"step": 54, "candidates": [{"token": ".\n\n", "prob": 0.50114, "char_disp": ".\\n\\n"}, {"token": ".\n", "prob": 0.42942, "char_disp": ".\\n"}, {"token": " for", "prob": 0.05532, "char_disp": " for"}, {"token": ":", "prob": 0.00441, "char_disp": ":"}, {"token": " that", "prob": 0.00202, "char_disp": " that"}], "chosen": {"token": ".\n\n", "prob": 0.50114, "in_topk": true, "char_disp": ".\\n\\n"}}, {"step": 55, "candidates": [{"token": " Steps", "prob": 0.50121, "char_disp": " Steps"}, {"token": " The", "prob": 0.21586, "char_disp": " The"}, {"token": " However", "prob": 0.15411, "char_disp": " However"}, {"token": " Example", "prob": 0.04566, "char_disp": " Example"}, {"token": " Let", "prob": 0.03909, "char_disp": " Let"}], "chosen": {"token": " However", "prob": 0.15411, "in_topk": true, "char_disp": " However"}}, {"step": 56, "candidates": [{"token": ",", "prob": 0.99998, "char_disp": ","}, {"token": " note", "prob": 1e-05, "char_disp": " note"}, {"token": "\uff0c\u8bf7", "prob": 0.0, "char_disp": "\uff0c\u8bf7"}, {"token": "Note", "prob": 0.0, "char_disp": "Note"}, {"token": "\u8bf7\u6ce8\u610f", "prob": 0.0, "char_disp": "\u8bf7\u6ce8\u610f"}], "chosen": {"token": ",", "prob": 0.99998, "in_topk": true, "char_disp": ","}}, {"step": 57, "candidates": [{"token": " note", "prob": 0.99307, "char_disp": " note"}, {"token": " to", "prob": 0.00197, "char_disp": " to"}, {"token": " the", "prob": 0.00133, "char_disp": " the"}, {"token": " for", "prob": 0.00091, "char_disp": " for"}, {"token": " since", "prob": 0.00082, "char_disp": " since"}], "chosen": {"token": " note", "prob": 0.99307, "in_topk": true, "char_disp": " note"}}, {"step": 58, "candidates": [{"token": " that", "prob": 0.95585, "char_disp": " that"}, {"token": ":", "prob": 0.04333, "char_disp": ":"}, {"token": ":\n", "prob": 0.00072, "char_disp": ":\\n"}, {"token": " the", "prob": 9e-05, "char_disp": " the"}, {"token": " from", "prob": 1e-05, "char_disp": " from"}], "chosen": {"token": " that", "prob": 0.95585, "in_topk": true, "char_disp": " that"}}]}</script>
+<script>
+function showError(message){
+  var el = document.getElementById('network');
+  el.innerHTML = '<div style="padding:24px;font-family:var(--mono);font-size:13px;color:var(--flag);line-height:1.6;">'
+    + '<strong>Could not render the graph.</strong><br>' + message + '</div>';
+}
+
+try {
+  if (typeof vis === 'undefined') {
+    throw new Error('The vis-network library did not load from cdnjs.cloudflare.com. This usually means an ad blocker, privacy extension, or network filter is blocking that domain -- try disabling extensions for this page, or an incognito window.');
+  }
+
+  var data = JSON.parse(document.getElementById('trace-data').textContent);
+
+  var metaEl = document.getElementById('meta');
+  var fields = [["Model", "deepseek-r1:8b"], ["Steps", 59], ["Top-k shown", 5], ["Temperature", 0.6], ["Tokens", 60]];
+  metaEl.innerHTML = fields.map(function(kv){ return '<div><dt>' + kv[0] + '</dt><dd>' + String(kv[1]).replace(/</g,'&lt;') + '</dd></div>'; }).join('');
+  document.getElementById('prompttext').textContent = data.prompt;
+  if (data.reasoning) {
+    document.getElementById('reasoning-block').style.display = '';
+    document.getElementById('reasoningtext').textContent = data.reasoning;
+  }
+
+  function getVar(name){
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || '#888888';
+  }
+  var ACCENT = getVar('--accent'), FLAG = getVar('--flag'), INK = getVar('--ink'),
+      INK_DIM = getVar('--ink-dim'), PAPER_RAISED = getVar('--paper-raised'),
+      LINE_STRONG = getVar('--line-strong');
+
+  var nodes = [];
+  var edges = [];
+  nodes.push({ id: 'root', label: (data.prompt.length > 24 ? data.prompt.slice(0,24) + '...' : data.prompt), level: 0, shape: 'box',
+    color: { background: PAPER_RAISED, border: INK },
+    font: { color: INK, face: 'IBM Plex Mono', size: 13, bold: true },
+    borderWidth: 2, margin: 8 });
+
+  var contextNode = 'root';
+
+  data.trace.forEach(function(step, i){
+    var level = i + 1;
+    var trunkNodeId = null;
+
+    step.candidates.forEach(function(c){
+      var nid = 's' + i + '_' + c.token.replace(/[^a-zA-Z0-9]/g, '') + '_' + i + '_' + Math.random().toString(36).slice(2,6);
+      var isChosen = step.chosen.in_topk && c.token === step.chosen.token;
+      nodes.push({
+        id: nid, level: level,
+        label: c.char_disp,
+        shape: 'box',
+        color: isChosen
+          ? { background: ACCENT, border: ACCENT }
+          : { background: PAPER_RAISED, border: LINE_STRONG },
+        font: { color: isChosen ? '#ffffff' : INK_DIM, face: 'IBM Plex Mono', size: isChosen ? 15 : 12 },
+        borderWidth: isChosen ? 2 : 1,
+        title: "'" + c.char_disp + "' -- " + (c.prob*100).toFixed(3) + '%' + (isChosen ? ' (chosen)' : ''),
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: isChosen ? 3 : 1,
+        color: { color: isChosen ? ACCENT : LINE_STRONG, opacity: isChosen ? 1 : 0.6 },
+        label: isChosen ? (c.prob*100).toFixed(1) + '%' : '',
+        font: { color: ACCENT, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      if (isChosen) trunkNodeId = nid;
+    });
+
+    if (!step.chosen.in_topk) {
+      var nid2 = 's' + i + '_surprise_' + Math.random().toString(36).slice(2,6);
+      nodes.push({
+        id: nid2, level: level,
+        label: step.chosen.char_disp,
+        shape: 'box',
+        color: { background: FLAG, border: FLAG },
+        font: { color: '#ffffff', face: 'IBM Plex Mono', size: 15 },
+        borderWidth: 2,
+        title: "'" + step.chosen.char_disp + "' -- " + (step.chosen.prob*100).toFixed(3) + '% (chosen, outside shown top-' + data.topk + ')',
+      });
+      edges.push({
+        from: contextNode, to: nid2,
+        width: 3,
+        color: { color: FLAG, opacity: 1 },
+        dashes: [4,3],
+        label: (step.chosen.prob*100).toFixed(1) + '%',
+        font: { color: FLAG, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      trunkNodeId = nid2;
+    }
+
+    contextNode = trunkNodeId;
+  });
+
+  var container = document.getElementById('network');
+  var network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
+    layout: {
+      hierarchical: { enabled: true, direction: 'LR', levelSeparation: 130, nodeSpacing: 26, treeSpacing: 26, sortMethod: 'directed' },
+    },
+    physics: false,
+    interaction: { hover: true, dragNodes: false, zoomView: true, dragView: true },
+    nodes: { shape: 'box', margin: 6, widthConstraint: { minimum: 28 } },
+    edges: { arrows: { to: { enabled: false } } },
+  });
+  network.fit();
+} catch (e) {
+  console.error(e);
+  showError((e && e.message) ? e.message : String(e));
+}
+</script>

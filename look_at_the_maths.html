@@ -1,0 +1,174 @@
+<title>Look at the Maths</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:760px; margin:0 auto; padding:52px 24px 72px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px; }
+  h1{ font-size:clamp(34px,7vw,50px); margin:0 0 18px; font-weight:700; text-wrap:balance; line-height:1.05; }
+  .dek{ font-size:18px; color:var(--ink-dim); max-width:60ch; line-height:1.6; margin:0 0 24px; }
+  .orient{ background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--ink-dim); border-radius:0 12px 12px 0; padding:16px 22px; font-size:15px; line-height:1.65; color:var(--ink-dim); margin:0 0 44px; }
+  .orient a{ color:var(--ink); }
+
+  section{ margin:0 0 48px; }
+  .stepnum{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--ink-dim); font-family:var(--mono); font-size:14px; margin-bottom:12px; }
+  h2{ font-size:25px; margin:0 0 6px; font-weight:700; line-height:1.2; }
+  .tie{ font-size:12.5px; color:var(--ink-dim); margin:0 0 14px; }
+  .tie a{ color:var(--accent); text-decoration:none; }
+  .tie a:hover{ text-decoration:underline; }
+  p{ font-size:16px; line-height:1.65; margin:0 0 16px; max-width:62ch; }
+  p strong{ color:var(--ink); }
+  p code{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:0 3px; border-radius:3px; }
+
+  .formula{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:22px 26px; margin:16px 0; text-align:center; }
+  .formula .eq{ font-family:var(--mono); font-size:22px; color:var(--ink); letter-spacing:0.02em; }
+  .formula .eq sub{ font-size:14px; }
+
+  .plain{ background:var(--paper-raised); border:1px dashed var(--line-strong); border-radius:10px; padding:14px 20px; margin:14px 0; }
+  .plain .plabel{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); display:block; margin-bottom:6px; }
+  .plain p{ font-size:15.5px; line-height:1.6; margin:0; max-width:none; }
+
+  .worked{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:12px; padding:18px 22px; margin:16px 0; }
+  .worked .label{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  .worked .line{ font-family:var(--mono); font-size:14px; line-height:1.9; color:var(--ink); overflow-x:auto; white-space:nowrap; }
+  .worked .line .dim{ color:var(--ink-dim); }
+  .worked .match{ margin-top:10px; font-family:var(--sans); font-size:13.5px; color:var(--ink-dim); }
+  .worked .match strong{ color:var(--accent); }
+
+  .punchline{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:28px 30px; margin-top:8px; }
+  .punchline h2{ margin-bottom:12px; }
+  .punchline p{ font-size:16.5px; max-width:none; }
+  .punchline p:last-child{ margin-bottom:0; }
+
+  .series{ margin-top:44px; }
+  .series h2{ font-size:13px; font-family:var(--cond); letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 14px; }
+  .series a{ display:block; color:var(--ink); text-decoration:none; font-size:14.5px; border-bottom:1px solid var(--line-strong); padding-bottom:9px; margin-bottom:9px; }
+  .series a:hover{ color:var(--accent); }
+  .series span{ display:block; color:var(--ink-dim); font-size:12.5px; margin-top:2px; }
+
+  @media (max-width:560px){
+    .page{ padding:36px 16px 56px; }
+    .formula .eq{ font-size:17px; }
+    .worked .line{ font-size:12px; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">The equations behind the plain-language series</p>
+  <h1>Look at the Maths</h1>
+  <p class="dek">Every other page in this project deliberately hid the formulas. This one doesn't. Same tiny AI, same real captured numbers &mdash; just the actual equations this time, worked through with real values so you can check the arithmetic yourself.</p>
+  <div class="orient">Nothing here is new data. Every number below was already captured for <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials</a>, <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter</a>, and <a href="https://claude.ai/artifact/8Wxhawj3j7Bj5ewj2Wxz4k">Getting Less Wrong</a>. This page just shows the formulas those numbers came from, instead of stepping around them.</div>
+
+  <section>
+    <div class="stepnum">1</div>
+    <h2>Turning a letter into a row of numbers</h2>
+    <p class="tie">The simplest step &mdash; no formula really needed, just a table lookup.</p>
+    <div class="formula"><span class="eq">embedding(id) = E[id]</span></div>
+    <div class="plain"><span class="plabel">In plain English</span><p>Think of a phonebook with 65 entries, one per letter. To "look up" a letter, you just flip to its page and copy down what's written there &mdash; 384 numbers. No calculating, no thinking. Just fetching a row that was already written down during training.</p></div>
+    <p><code>E</code> is a table with 65 rows (one per letter) and 384 columns. Letter <strong>"R"</strong> is id <strong>30</strong>. Its row, real values, first six of 384:</p>
+    <div class="worked">
+      <div class="line">E[30] = [ -0.2350, -0.4063, 0.4989, 0.4852, -0.5298, -1.8028, <span class="dim">&hellip; 378 more</span> ]</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stepnum">2</div>
+    <h2>Every layer's real workhorse: the dot product</h2>
+    <p class="tie">This one formula, repeated with different numbers, is almost everything a transformer does &mdash; every <code>MUL_MAT</code> in this project's traces is this.</p>
+    <div class="formula"><span class="eq">y = x&middot;W + b = &sum;<sub>i</sub> x<sub>i</sub>W<sub>i</sub> + b</span></div>
+    <div class="plain"><span class="plabel">In plain English</span><p>Take two lists of numbers of the same length. Pair them up in order, multiply each pair, then add up every result into one single number. Add one more fixed number on top. That's the whole operation &mdash; done with different lists, over and over, it's most of what happens inside the AI.</p></div>
+    <p>Take the model's real final 384-number output for <strong>"ROMEO:"</strong>, and the real trained row of weights that scores the letter "newline." Multiply matching positions together, add them all up, add one more real number (the bias). That's the entire computation behind one prediction score:</p>
+    <div class="worked">
+      <div class="label">real numbers, computed live</div>
+      <div class="line">x &middot; W<sub>newline</sub> = (0.4427)(0.0657) + (1.4233)(-0.0178) + &hellip; <span class="dim">384 terms</span> &hellip; = 14.0038</div>
+      <div class="line">14.0038 + bias (0.0068) = <strong>14.0107</strong></div>
+      <div class="match">The model's own stored value for this exact logit: <strong>14.0107</strong>. Same number, computed two different ways.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stepnum">3</div>
+    <h2>Attention: which other letters matter</h2>
+    <p class="tie">The one formula in this project's <code>ggml</code> traces labeled <code>FLASH_ATTN_EXT</code>.</p>
+    <div class="formula"><span class="eq">Attention(Q,K,V) = softmax( QK<sup>T</sup> / &radic;d<sub>k</sub> ) V</span></div>
+    <div class="plain"><span class="plabel">In plain English</span><p>Picture everyone at a table quietly asking "who here matters to me right now?" Everyone else answers, some strongly, some weakly. Each person then blends a little of what everyone else said into their own notes &mdash; more from whoever answered strongly, almost nothing from whoever answered weakly.</p></div>
+    <p>In the formula's own terms: every letter asks a question (<code>Q</code>), every letter (including itself) offers an answer to match against (<code>K</code>), and how well they match decides how much of that letter's content (<code>V</code>) gets mixed in. Dividing by <code>&radic;d<sub>k</sub></code> (here, &radic;64 = 8) just keeps the numbers from growing too large before the next step &mdash; softmax, which is section 4.</p>
+  </section>
+
+  <section>
+    <div class="stepnum">4</div>
+    <h2>Softmax: turning scores into real odds</h2>
+    <p class="tie">The exact formula behind every bar chart in <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter</a>.</p>
+    <div class="formula"><span class="eq">softmax(z<sub>i</sub>) = e<sup>z<sub>i</sub></sup> / &sum;<sub>j</sub> e<sup>z<sub>j</sub></sup></span></div>
+    <div class="plain"><span class="plabel">In plain English</span><p>Turn a pile of raw scores into percentages that add up to 100%, while keeping the biggest score clearly on top. A slightly bigger raw score turns into a noticeably bigger share of the total &mdash; that's the whole trick behind turning "scores" into something you can call odds.</p></div>
+    <p>Take the real 65 logits the model produced for what follows <strong>"ROMEO:"</strong> (including the 14.0107 from section 2). Raise <em>e</em> to each one, add all 65 up, then divide the one you want by that total:</p>
+    <div class="worked">
+      <div class="label">real numbers, computed live</div>
+      <div class="line">&sum;<sub>j</sub> e<sup>z<sub>j</sub></sup> across all 65 letters = 1,216,137.17</div>
+      <div class="line">e<sup>14.0107</sup> / 1,216,137.17 = <strong>0.999497</strong></div>
+      <div class="match">The model's own stored probability for "newline" here: <strong>0.999497</strong>. Matches to six decimal places.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stepnum">5</div>
+    <h2>Measuring how wrong: cross-entropy</h2>
+    <p class="tie">The number behind every bar in <a href="https://claude.ai/artifact/8Wxhawj3j7Bj5ewj2Wxz4k">Getting Less Wrong</a>.</p>
+    <div class="formula"><span class="eq">L = &minus;log( p<sub>correct</sub> )</span></div>
+    <div class="plain"><span class="plabel">In plain English</span><p>How surprised should the AI be by the correct answer? If it was confident and right, barely surprised &mdash; low score. If it was confident and wrong, extremely surprised &mdash; high score. Training's entire goal is to make this "surprise score" smaller, on average, across everything it reads.</p></div>
+    <p>Just: take the probability the model assigned to the letter that actually came next, and negative-log it. Confident and right gives a small number; confident and wrong gives a huge one. A model that hasn't learned anything spreads its guesses evenly across all 65 letters, so pure chance predicts a starting score of exactly <code>&minus;log(1/65) = ln(65)</code>:</p>
+    <div class="worked">
+      <div class="line">ln(65) = <strong>4.1744</strong> &mdash; the score of a model that knows nothing</div>
+      <div class="line">Our AI's real, measured first-step score: <strong>4.2886</strong></div>
+      <div class="match">Close to pure chance, not identical &mdash; the random starting numbers weren't <em>perfectly</em> even, just close to it. That's expected, and it's a real measurement, not a rounded one.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="stepnum">6</div>
+    <h2>The nudge itself</h2>
+    <p class="tie">What actually happens 5,000 times in <a href="https://claude.ai/artifact/8Wxhawj3j7Bj5ewj2Wxz4k">Getting Less Wrong</a>.</p>
+    <div class="formula"><span class="eq">&theta; &larr; &theta; &minus; &eta; &middot; &nabla;L(&theta;)</span></div>
+    <div class="plain"><span class="plabel">In plain English</span><p>For every single number inside the AI, ask: "if I nudge this number up a tiny bit, does the surprise score from section 5 get better or worse?" Then move the number a tiny step in whichever direction helps. Do that for all 10.8 million numbers, thousands of times in a row. There's no bigger idea behind training than this.</p></div>
+    <p><code>&theta;</code> is any one of the model's 10,788,929 numbers. <code>&nabla;L(&theta;)</code> is the slope &mdash; which direction, and how strongly, changing that one number would make the wrongness score go up or down. <code>&eta;</code> (our real value: <strong>0.0003</strong>) controls how big a step to take. Subtract, and the number gets very slightly less wrong. Repeat for all 10.8 million numbers, 5,000 times.</p>
+    <p style="font-size:14px;color:var(--ink-dim);">One honest simplification: this is the classic version of the idea. Our actual training code uses <strong>AdamW</strong>, a more sophisticated variant that also tracks how each number has been moving recently and adjusts its own step size &mdash; same core idea, extra bookkeeping. The formula above is the idea it's built on, not a line-for-line description of the code.</p>
+  </section>
+
+  <div class="punchline">
+    <h2>So is any of this the missing dictionary?</h2>
+    <p>No &mdash; and now you've seen exactly why not, in the clearest possible terms. Every equation on this page is completely known, completely public, and just checked twice against our own model's real output. There is nothing hidden in <em>how</em> the numbers are computed.</p>
+    <p><strong>What's missing was never a formula.</strong> It's an interpretation &mdash; a mapping from "here is what 384 real numbers equal" to "here is what they mean." These five equations tell you exactly how to compute every one of this project's unlabeled dials. Not one of them tells you what any single dial is <em>for</em>.</p>
+  </div>
+
+  <div class="series">
+    <h2>The rest of the series</h2>
+    <a href="https://claude.ai/artifact/8ANKgUNqRhGernTP8W5Joq">The Whole Story<span>The same six stages, fully captured from our own tiny AI, start to finish.</span></a>
+    <a href="https://claude.ai/artifact/QFKLPgh8DdrZVZdGd3yD94">A Much Bigger Machine<span>The same story again, at real frontier-model scale.</span></a>
+    <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials<span>The real 384 numbers with no dictionary, and why.</span></a>
+    <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter<span>How those numbers become real, readable odds again.</span></a>
+  </div>
+</div>

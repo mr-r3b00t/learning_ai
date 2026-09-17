@@ -1,0 +1,184 @@
+<title>What 'AI' Actually Means</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:820px; margin:0 auto; padding:52px 24px 76px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px; }
+  h1{ font-size:clamp(32px,7vw,48px); margin:0 0 18px; font-weight:700; text-wrap:balance; line-height:1.08; }
+  .dek{ font-size:17px; color:var(--ink-dim); max-width:66ch; line-height:1.6; margin:0 0 8px; }
+  .dek strong{ color:var(--ink); }
+
+  figure{ margin:32px 0 44px; }
+  .diagram-wrap{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:16px; padding:14px; }
+  svg{ display:block; width:100%; height:auto; }
+  figcaption{ font-size:13px; color:var(--ink-dim); margin-top:12px; line-height:1.5; text-align:center; }
+
+  .branch{ display:grid; grid-template-columns:34px 1fr; gap:16px; padding:20px 0; border-top:1px solid var(--line); }
+  .branch:first-of-type{ border-top:1px solid var(--line-strong); }
+  .branch .dot{ display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--ink-dim); font-size:16px; }
+  .branch.hot .dot{ border-color:var(--accent); background:var(--accent-soft); }
+  .branch h2{ font-size:19px; margin:0 0 6px; font-weight:700; }
+  .branch h2 .eg{ font-family:var(--cond); font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-dim); margin-left:8px; }
+  .branch p{ font-size:15px; line-height:1.6; margin:0; max-width:62ch; }
+  .branch code{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:0 3px; border-radius:3px; }
+
+  .punchline{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:26px 28px; margin-top:24px; }
+  .punchline h2{ margin:0 0 10px; font-size:20px; }
+  .punchline p{ font-size:15.5px; line-height:1.6; margin:0 0 10px; max-width:none; }
+  .punchline p:last-child{ margin-bottom:0; }
+
+  .series{ margin-top:40px; }
+  .series h2{ font-size:13px; font-family:var(--cond); letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 14px; }
+  .series a{ display:block; color:var(--ink); text-decoration:none; font-size:14.5px; border-bottom:1px solid var(--line-strong); padding-bottom:9px; margin-bottom:9px; }
+  .series a:hover{ color:var(--accent); }
+  .series span{ display:block; color:var(--ink-dim); font-size:12.5px; margin-top:2px; }
+
+  @media (max-width:560px){
+    .page{ padding:36px 16px 56px; }
+    .branch{ grid-template-columns:28px 1fr; gap:12px; }
+    .branch .dot{ width:28px; height:28px; font-size:13px; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="page">
+  <p class="kicker">Defining terms, precisely</p>
+  <h1>What "AI" Actually Means</h1>
+  <p class="dek"><strong>"AI" is an umbrella term</strong> &mdash; not a technology, a label stretched over a genuinely disparate pile of techniques that share a goal (get a computer to do something that looks like it needs intelligence) but not a mechanism. Every page in this project describes exactly one branch of that umbrella. This page shows which one, and what the others look like instead.</p>
+
+  <figure>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 960 500" role="img" aria-label="A tree diagram: AI as an umbrella term branching into five unrelated approaches — symbolic rule-based systems, search and planning, classical statistical machine learning, neural networks, and reinforcement learning. Neural networks branch further into transformers, and transformers branch into a highlighted box: tiny-shakespeare and deepseek-r1, everything this project examined.">
+        <defs>
+          <marker id="ai-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <rect x="350" y="13" width="260" height="54" rx="10" fill="var(--paper-raised)" stroke="var(--ink)" stroke-width="2"/>
+        <text x="480" y="35" text-anchor="middle" font-family="IBM Plex Sans" font-size="15" font-weight="700" fill="var(--ink)">"AI"</text>
+        <text x="480" y="53" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="10.5" fill="var(--ink-dim)">an umbrella term</text>
+
+        <g stroke="var(--ink-dim)" stroke-width="1.5" fill="none">
+          <path d="M480,67 L480,100"/>
+          <path d="M90,100 L850,100"/>
+          <path d="M90,100 L90,138"/>
+          <path d="M280,100 L280,138"/>
+          <path d="M470,100 L470,138"/>
+          <path d="M660,100 L660,138"/>
+          <path d="M850,100 L850,138"/>
+        </g>
+
+        <g font-family="IBM Plex Sans Condensed" font-size="11" fill="var(--ink)" text-anchor="middle">
+          <rect x="8" y="138" width="164" height="64" rx="9" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="1.5"/>
+          <text x="90" y="166">Symbolic /</text>
+          <text x="90" y="180">Rule-based</text>
+
+          <rect x="198" y="138" width="164" height="64" rx="9" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="1.5"/>
+          <text x="280" y="166">Search &amp;</text>
+          <text x="280" y="180">Planning</text>
+
+          <rect x="388" y="138" width="164" height="64" rx="9" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="1.5"/>
+          <text x="470" y="166">Classical</text>
+          <text x="470" y="180">Statistical ML</text>
+
+          <rect x="578" y="138" width="164" height="64" rx="9" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="1.5"/>
+          <text x="660" y="166">Neural</text>
+          <text x="660" y="180">Networks</text>
+
+          <rect x="768" y="138" width="164" height="64" rx="9" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="1.5"/>
+          <text x="850" y="166">Reinforcement</text>
+          <text x="850" y="180">Learning</text>
+        </g>
+
+        <path d="M660,202 L660,265" stroke="var(--ink-dim)" stroke-width="1.5" fill="none" marker-end="url(#ai-arrow)" color="var(--ink-dim)"/>
+        <rect x="585" y="270" width="150" height="46" rx="8" fill="var(--paper-raised)" stroke="var(--ink-dim)" stroke-width="1.5"/>
+        <text x="660" y="298" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="11.5" fill="var(--ink)">Transformers</text>
+
+        <path d="M660,316 L660,375" stroke="var(--accent)" stroke-width="2.5" fill="none" marker-end="url(#ai-arrow)" color="var(--accent)"/>
+        <rect x="530" y="380" width="260" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="660" y="408" text-anchor="middle" font-family="IBM Plex Sans" font-size="13.5" font-weight="700" fill="var(--accent)">tiny-shakespeare &amp;</text>
+        <text x="660" y="425" text-anchor="middle" font-family="IBM Plex Sans" font-size="13.5" font-weight="700" fill="var(--accent)">deepseek-r1</text>
+        <text x="660" y="443" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-size="10" fill="var(--accent)">everything this project traced</text>
+      </svg>
+    </div>
+    <figcaption>Five branches under one label, sharing a goal but no mechanism. This project lives entirely in one narrow path down the right side.</figcaption>
+  </figure>
+
+  <div class="branch">
+    <div class="dot">1</div>
+    <div>
+      <h2>Symbolic / Rule-based <span class="eg">e.g. early chess engines, expert systems</span></h2>
+      <p>Hand-written <code>if this, then that</code> logic. No training, no data, no numbers to trace &mdash; just code a person wrote directly. Everything this project showed about tokens, hidden states, and sampling is meaningless here; there's nothing of the kind inside a rule-based system.</p>
+    </div>
+  </div>
+
+  <div class="branch">
+    <div class="dot">2</div>
+    <div>
+      <h2>Search &amp; Planning <span class="eg">e.g. GPS routing, A*, chess minimax</span></h2>
+      <p>Explore possible next moves against a fixed rule and pick the best one. No learning happens at all &mdash; the "intelligence" is entirely in a search strategy someone designed in advance, not in anything discovered from data.</p>
+    </div>
+  </div>
+
+  <div class="branch">
+    <div class="dot">3</div>
+    <div>
+      <h2>Classical Statistical ML <span class="eg">e.g. spam filters, credit scoring</span></h2>
+      <p>Fit a mathematical model to data using well-understood statistics &mdash; linear regression, decision trees, random forests. Often small enough that a person really can point to what one specific part is doing, unlike the 384-number mystery this project spent so long on.</p>
+    </div>
+  </div>
+
+  <div class="branch hot">
+    <div class="dot">4</div>
+    <div>
+      <h2>Neural Networks <span class="eg">where this entire project lives</span></h2>
+      <p>Trained, not hand-coded &mdash; layers of the exact matrix multiplications traced in <a href="look_at_the_maths.html">Look at the Maths</a>. A huge family covering far more than language: image recognition, protein folding, self-driving perception. This project's branch inside it, specifically: <strong>transformers</strong>, the architecture behind both <code>tiny-shakespeare</code> and <code>deepseek-r1</code>.</p>
+    </div>
+  </div>
+
+  <div class="branch">
+    <div class="dot">5</div>
+    <div>
+      <h2>Reinforcement Learning <span class="eg">e.g. AlphaGo, robot-arm control</span></h2>
+      <p>Learn by trial and reward instead of by labeled examples &mdash; play a game millions of times, gradually favor moves that win. Often built from neural networks underneath, but organized around a completely different training signal than the "guess the next letter, check, nudge" loop in <a href="getting_less_wrong.html">Getting Less Wrong</a>.</p>
+    </div>
+  </div>
+
+  <div class="punchline">
+    <h2>So what has this whole project actually been about?</h2>
+    <p>One narrow path down one branch of a five-way tree: neural networks, specifically transformers, specifically two of them. Every real number in this project &mdash; every token id, every logit, every CUDA kernel, every missing dictionary &mdash; describes <em>that path</em>. None of it describes a decision tree, an A* pathfinder, or a hand-written expert system, even though every one of those is, correctly and unremarkably, also called "AI."</p>
+    <p><strong>The word was never precise. The mechanism always was &mdash; that's what the rest of this project actually measured.</strong></p>
+  </div>
+
+  <div class="series">
+    <h2>Where this fits in the project</h2>
+    <a href="the_model_lifecycle.html">The Model Lifecycle<span>A map of the whole project, stage by stage.</span></a>
+    <a href="../pipeline-diagram.html">Byte-Level Bard<span>The transformer this page keeps pointing back to, built from scratch.</span></a>
+    <a href="look_at_the_maths.html">Look at the Maths<span>The actual equations behind the neural-network branch specifically.</span></a>
+  </div>
+</div>

@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
 <title>The Next Letter</title>
 <style>
   :root{
@@ -67,12 +73,13 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-
+</head>
+<body>
 <div class="page">
   <p class="kicker">A plain-language explainer, part two</p>
   <h1>The Next Letter</h1>
   <p class="dek">Last time, we showed you 384 real numbers from our tiny AI with no dictionary for what they mean. Here's what those numbers turn into next &mdash; and it's a more honest ending than "nobody knows anything."</p>
-  <div class="recap">Quick recap from <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials</a>: our AI turns letters into numbers using a list it can't be wrong about (a real dictionary, 65 entries). Then it does math that produces 384 more numbers &mdash; real, but with no list telling you what any of them mean. This page picks up right there.</div>
+  <div class="recap">Quick recap from <a href="the_unlabeled_dials.html">The Unlabeled Dials</a>: our AI turns letters into numbers using a list it can't be wrong about (a real dictionary, 65 entries). Then it does math that produces 384 more numbers &mdash; real, but with no list telling you what any of them mean. This page picks up right there.</div>
 
   <section>
     <div class="stepnum">1</div>
@@ -484,7 +491,7 @@
   <section>
     <div class="stepnum yes">3</div>
     <h2>A weighted lottery, not a certainty</h2>
-    <p>The AI doesn't always take the top choice. It runs a weighted lottery: a newline with a 99.9497% chance will almost always win &mdash; but "almost always" isn't "always." Elsewhere in this project, watching the same AI write a longer sentence, it once landed on a letter that only had a <strong>3.6% chance</strong> &mdash; a real long shot, drawn fair and square.</p>
+    <p>The AI doesn't always take the top choice. It runs a weighted lottery: a newline with a 99.9497% chance will almost always win &mdash; but "almost always" isn't "always." (If you've read <a href="the_journey.html" style="color:var(--ink);">The Journey</a>, you saw 99.996% for this same prediction &mdash; that page applies a sampling "temperature" that sharpens the odds before the draw; this page shows the raw odds straight out of the maths. Same numbers underneath, one extra step.) Elsewhere in this project, watching the same AI write a longer sentence, it once landed on a letter that only had a <strong>3.6% chance</strong> &mdash; a real long shot, drawn fair and square.</p>
     <div class="outcome">This time: the lottery landed on <strong>'\n'</strong>, same as the top pick. No drama &mdash; but it could have gone another way, and sometimes, elsewhere, it does.</div>
     <div class="analogy">Think of it like a raffle with 65 tickets in a box, but the tickets aren't evenly split &mdash; one ticket type fills 99.9497% of the box, and the AI drops in the leftover tickets in whatever tiny amounts its math worked out. Someone reaches in and pulls one. You can watch exactly how the box was filled. You just can't see, by looking at the 384 numbers alone, <em>why</em> the AI decided to fill it that way.</div>
   </section>
@@ -494,3 +501,5 @@
     <p><strong>Dictionary in &rarr; unlabeled math &rarr; dictionary out.</strong> Both ends of this process are things we can read perfectly: the letters going in, and the exact odds coming out. What happens between them &mdash; the 384 numbers that turned "ROMEO:" into a 99.9497% preference for a newline &mdash; is real, watchable, and still has no dictionary. That's the honest shape of the mystery: not "the AI's decision is unknowable," but "we can see the decision and its odds exactly, and still not read the reasoning that produced them."</p>
   </div>
 </div>
+</body>
+</html>

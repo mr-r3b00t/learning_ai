@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
 <title>The Larger Journey</title>
 <style>
   :root{
@@ -92,11 +98,12 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-
+</head>
+<body>
 <div class="page">
   <p class="kicker">One prompt, start to finish &mdash; deepseek-r1:8b</p>
   <h1>The Larger Journey</h1>
-  <p class="dek">The same story as <a href="https://claude.ai/code/artifact/d7567cc7-55fc-4c71-a8ef-29d143512365" style="color:var(--ink);">The Journey</a>, told for an 8-billion-parameter model we don't own the weights of. Prompt: <code>"The capital of France is"</code>. Every number below is real &mdash; captured across two separate traces of the same prompt &mdash; and one gap is named honestly where the data genuinely runs out.</p>
+  <p class="dek">The same story as <a href="the_journey.html" style="color:var(--ink);">The Journey</a>, told for an 8-billion-parameter model we don't own the weights of. Prompt: <code>"The capital of France is"</code>. Every number below is real &mdash; captured across two separate traces of the same prompt &mdash; and one gap is named honestly where the data genuinely runs out.</p>
 
   <div class="stage" data-n="1">
     <p class="role">Prompt &rarr; tokens</p>
@@ -139,7 +146,7 @@
     <h2>The output accumulates</h2>
     <p>Same pipeline, run again for each new token. The real text this call produced:</p>
     <div class="excerpt"><span class="src">token span Ollama's API labels <code>message.reasoning</code></span><pre>&lt;think&gt;Okay, the user is asking for the capital of France. Let me start by recalling the basic facts. I know Paris is the capital, but I should double-check to be sure. Right, it's definitely Paris. Now, I need to think about why the user is asking this.</pre></div>
-    <div class="honest">Honest result, not a cherry-pick: none of these 59 tokens were a long-shot draw &mdash; every single one was the sampler's top-ranked candidate. Contrast with tiny-shakespeare's 4 long-shot draws in 40 steps. That doesn't mean this model never takes one &mdash; <a href="https://claude.ai/code/artifact/1dd3b94f-c5bb-4cbc-8d25-99942c3bf43c" style="color:var(--ink);">The Sheep Riddle</a>, traced earlier in this project, catches it choosing <code>'b'</code> at 3.6% mid-sentence. This window just happened not to.</div>
+    <div class="honest">Honest result, not a cherry-pick: none of these 59 tokens were a long-shot draw &mdash; every single one was the sampler's top-ranked candidate. Contrast with tiny-shakespeare's 4 long-shot draws in 40 steps. That doesn't mean this model never takes one &mdash; <a href="sampling_tree_sheep_riddle.html" style="color:var(--ink);">The Sheep Riddle</a>, traced earlier in this project, catches it choosing <code>'b'</code> at 3.6% mid-sentence. This window just happened not to.</div>
   </div>
 
   <div class="stage" data-n="5">
@@ -161,10 +168,12 @@
   <div class="linkout">
     <h2>The pieces this journey is built from</h2>
     <div class="linkrow">
-      <a href="https://claude.ai/code/artifact/6b32fc9c-7d02-4769-85a7-870ca7b42c0c">deepseek-r1:8b Graph &rarr;<span>All 1,266 real ggml ops captured from this model's weights, in full.</span></a>
-      <a href="https://claude.ai/code/artifact/1dd3b94f-c5bb-4cbc-8d25-99942c3bf43c">The Sheep Riddle &rarr;<span>A different prompt, traced the same way &mdash; where a long-shot draw actually happens.</span></a>
-      <a href="https://claude.ai/code/artifact/e8a03789-4e64-4b89-bd3c-3fefb2904bc1">GPU Kernel Trace &rarr;<span>The same class of ops above, as real CUDA kernels with real hardware timing.</span></a>
-      <a href="https://claude.ai/code/artifact/d7567cc7-55fc-4c71-a8ef-29d143512365">The Journey &rarr;<span>The small-model original this page mirrors.</span></a>
+      <a href="ggml_graph_deepseek.html">deepseek-r1:8b Graph &rarr;<span>All 1,266 real ggml ops captured from this model's weights, in full.</span></a>
+      <a href="sampling_tree_sheep_riddle.html">The Sheep Riddle &rarr;<span>A different prompt, traced the same way &mdash; where a long-shot draw actually happens.</span></a>
+      <a href="gpu_trace.html">GPU Kernel Trace &rarr;<span>The same class of ops above, as real CUDA kernels with real hardware timing.</span></a>
+      <a href="the_journey.html">The Journey &rarr;<span>The small-model original this page mirrors.</span></a>
     </div>
   </div>
 </div>
+</body>
+</html>

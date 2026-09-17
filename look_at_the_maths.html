@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
 <title>Look at the Maths</title>
 <style>
   :root{
@@ -76,12 +82,13 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-
+</head>
+<body>
 <div class="page">
   <p class="kicker">The equations behind the plain-language series</p>
   <h1>Look at the Maths</h1>
   <p class="dek">Every other page in this project deliberately hid the formulas. This one doesn't. Same tiny AI, same real captured numbers &mdash; just the actual equations this time, worked through with real values so you can check the arithmetic yourself.</p>
-  <div class="orient">Nothing here is new data. Every number below was already captured for <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials</a>, <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter</a>, and <a href="https://claude.ai/artifact/8Wxhawj3j7Bj5ewj2Wxz4k">Getting Less Wrong</a>. This page just shows the formulas those numbers came from, instead of stepping around them.</div>
+  <div class="orient">Nothing here is new data. Every number below was already captured for <a href="the_unlabeled_dials.html">The Unlabeled Dials</a>, <a href="the_next_letter.html">The Next Letter</a>, and <a href="getting_less_wrong.html">Getting Less Wrong</a>. This page just shows the formulas those numbers came from, instead of stepping around them.</div>
 
   <section>
     <div class="stepnum">1</div>
@@ -122,7 +129,7 @@
   <section>
     <div class="stepnum">4</div>
     <h2>Softmax: turning scores into real odds</h2>
-    <p class="tie">The exact formula behind every bar chart in <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter</a>.</p>
+    <p class="tie">The exact formula behind every bar chart in <a href="the_next_letter.html">The Next Letter</a>.</p>
     <div class="formula"><span class="eq">softmax(z<sub>i</sub>) = e<sup>z<sub>i</sub></sup> / &sum;<sub>j</sub> e<sup>z<sub>j</sub></sup></span></div>
     <div class="plain"><span class="plabel">In plain English</span><p>Turn a pile of raw scores into percentages that add up to 100%, while keeping the biggest score clearly on top. A slightly bigger raw score turns into a noticeably bigger share of the total &mdash; that's the whole trick behind turning "scores" into something you can call odds.</p></div>
     <p>Take the real 65 logits the model produced for what follows <strong>"ROMEO:"</strong> (including the 14.0107 from section 2). Raise <em>e</em> to each one, add all 65 up, then divide the one you want by that total:</p>
@@ -137,7 +144,7 @@
   <section>
     <div class="stepnum">5</div>
     <h2>Measuring how wrong: cross-entropy</h2>
-    <p class="tie">The number behind every bar in <a href="https://claude.ai/artifact/8Wxhawj3j7Bj5ewj2Wxz4k">Getting Less Wrong</a>.</p>
+    <p class="tie">The number behind every bar in <a href="getting_less_wrong.html">Getting Less Wrong</a>.</p>
     <div class="formula"><span class="eq">L = &minus;log( p<sub>correct</sub> )</span></div>
     <div class="plain"><span class="plabel">In plain English</span><p>How surprised should the AI be by the correct answer? If it was confident and right, barely surprised &mdash; low score. If it was confident and wrong, extremely surprised &mdash; high score. Training's entire goal is to make this "surprise score" smaller, on average, across everything it reads.</p></div>
     <p>Just: take the probability the model assigned to the letter that actually came next, and negative-log it. Confident and right gives a small number; confident and wrong gives a huge one. A model that hasn't learned anything spreads its guesses evenly across all 65 letters, so pure chance predicts a starting score of exactly <code>&minus;log(1/65) = ln(65)</code>:</p>
@@ -151,7 +158,7 @@
   <section>
     <div class="stepnum">6</div>
     <h2>The nudge itself</h2>
-    <p class="tie">What actually happens 5,000 times in <a href="https://claude.ai/artifact/8Wxhawj3j7Bj5ewj2Wxz4k">Getting Less Wrong</a>.</p>
+    <p class="tie">What actually happens 5,000 times in <a href="getting_less_wrong.html">Getting Less Wrong</a>.</p>
     <div class="formula"><span class="eq">&theta; &larr; &theta; &minus; &eta; &middot; &nabla;L(&theta;)</span></div>
     <div class="plain"><span class="plabel">In plain English</span><p>For every single number inside the AI, ask: "if I nudge this number up a tiny bit, does the surprise score from section 5 get better or worse?" Then move the number a tiny step in whichever direction helps. Do that for all 10.8 million numbers, thousands of times in a row. There's no bigger idea behind training than this.</p></div>
     <p><code>&theta;</code> is any one of the model's 10,788,929 numbers. <code>&nabla;L(&theta;)</code> is the slope &mdash; which direction, and how strongly, changing that one number would make the wrongness score go up or down. <code>&eta;</code> (our real value: <strong>0.0003</strong>) controls how big a step to take. Subtract, and the number gets very slightly less wrong. Repeat for all 10.8 million numbers, 5,000 times.</p>
@@ -166,9 +173,11 @@
 
   <div class="series">
     <h2>The rest of the series</h2>
-    <a href="https://claude.ai/artifact/8ANKgUNqRhGernTP8W5Joq">The Whole Story<span>The same six stages, fully captured from our own tiny AI, start to finish.</span></a>
-    <a href="https://claude.ai/artifact/QFKLPgh8DdrZVZdGd3yD94">A Much Bigger Machine<span>The same story again, at real frontier-model scale.</span></a>
-    <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials<span>The real 384 numbers with no dictionary, and why.</span></a>
-    <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter<span>How those numbers become real, readable odds again.</span></a>
+    <a href="the_whole_story.html">The Whole Story<span>The same six stages, fully captured from our own tiny AI, start to finish.</span></a>
+    <a href="a_much_bigger_machine.html">A Much Bigger Machine<span>The same story again, at real frontier-model scale.</span></a>
+    <a href="the_unlabeled_dials.html">The Unlabeled Dials<span>The real 384 numbers with no dictionary, and why.</span></a>
+    <a href="the_next_letter.html">The Next Letter<span>How those numbers become real, readable odds again.</span></a>
   </div>
 </div>
+</body>
+</html>

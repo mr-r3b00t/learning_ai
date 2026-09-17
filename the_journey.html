@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
 <title>The Journey</title>
 <style>
   :root{
@@ -93,7 +99,8 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-
+</head>
+<body>
 <div class="page">
   <p class="kicker">One prompt, start to finish &mdash; tiny-shakespeare</p>
   <h1>The Journey</h1>
@@ -141,6 +148,7 @@
       <div class="probrow"><span class="ch">S</span><div class="probtrack"><div class="probfill" style="width:0.01%"></div></div><span class="probpct">0.001%</span></div>
     </div>
     <div class="outcome">A weighted random draw (seed 1337) landed on <strong>'\n'</strong> &mdash; unsurprising here, since it held 99.996% of the probability mass. That won't always be true.</div>
+    <p style="font-size:13px;color:var(--ink-dim);">A note on the number: 99.996% is after scaling the logits by the sampling temperature (0.8) used for this generation run, which sharpens the distribution. The raw, unscaled softmax of the same logits gives <strong>99.9497%</strong> &mdash; that's the figure <a href="the_next_letter.html" style="color:var(--ink);">The Next Letter</a> and <a href="look_at_the_maths.html" style="color:var(--ink);">Look at the Maths</a> use. Same forward pass, same logits, one extra division.</p>
   </div>
 
   <div class="stage" data-n="4">
@@ -171,9 +179,11 @@
   <div class="linkout">
     <h2>The pieces this journey is built from</h2>
     <div class="linkrow">
-      <a href="https://claude.ai/code/artifact/1c127c3c-f7e5-4ce6-a8a4-27d1f57be772">Live Computation Graph &rarr;<span>Module-level PyTorch trace of the same forward pass, via forward hooks.</span></a>
-      <a href="https://claude.ai/code/artifact/71ae73a7-fed1-418e-9ade-5dc1f342fe01">tiny-shakespeare Graph &rarr;<span>All 201 real ggml ops for this exact prompt, in full.</span></a>
-      <a href="https://claude.ai/code/artifact/a701f69e-66ac-469e-a17b-fa4b68f3fa0a">Sampling Tree &rarr;<span>All 40 generation steps as an interactive branching tree, every candidate and its real probability.</span></a>
+      <a href="graph_trace.html">Live Computation Graph &rarr;<span>Module-level PyTorch trace of the same forward pass, via forward hooks.</span></a>
+      <a href="ggml_graph.html">tiny-shakespeare Graph &rarr;<span>All 201 real ggml ops for this exact prompt, in full.</span></a>
+      <a href="sampling_tree.html">Sampling Tree &rarr;<span>All 40 generation steps as an interactive branching tree, every candidate and its real probability.</span></a>
     </div>
   </div>
 </div>
+</body>
+</html>

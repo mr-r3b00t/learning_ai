@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
 <title>Getting Less Wrong</title>
 <style>
   :root{
@@ -66,12 +72,13 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-
+</head>
+<body>
 <div class="page">
   <p class="kicker">A plain-language explainer, part three</p>
   <h1>Getting Less Wrong</h1>
   <p class="dek">The first two parts showed you what our tiny AI looks like once it already knows how to guess text. This part shows where that ability actually came from &mdash; and it's a much duller story than "learning" makes it sound.</p>
-  <div class="recap">Quick recap: <a href="https://claude.ai/artifact/NZYpaSYg3uWcnZBfrady9W">The Unlabeled Dials</a> showed a real dictionary for letters and 384 real numbers with no dictionary. <a href="https://claude.ai/artifact/A1cKNrVJs5xRaGGUBaVasv">The Next Letter</a> showed those numbers turning into real odds for what comes next. This page shows how the AI got good at producing odds like that in the first place.</div>
+  <div class="recap">Quick recap: <a href="the_unlabeled_dials.html">The Unlabeled Dials</a> showed a real dictionary for letters and 384 real numbers with no dictionary. <a href="the_next_letter.html">The Next Letter</a> showed those numbers turning into real odds for what comes next. This page shows how the AI got good at producing odds like that in the first place.</div>
 
   <section>
     <div class="stepnum no">1</div>
@@ -116,3 +123,5 @@
     <p>That's the whole reason no dictionary exists for them. It's not that one was written and then lost. <strong>Training was never asked to produce one</strong> &mdash; only to make the final answer better, 5,000 times in a row. It succeeded at exactly that, and nothing more.</p>
   </div>
 </div>
+</body>
+</html>

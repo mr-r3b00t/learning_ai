@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
 <title>deepseek-r1:8b Graph</title>
 <style>
   :root{
@@ -46,6 +52,8 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
 <div class="page">
   <p class="kicker">llama.cpp eval-callback &mdash; ggml op level</p>
   <h1>Literal ggml Graph</h1>
@@ -1330,3 +1338,5 @@
   </div>
   <figcaption>Parsed from <code>llama-eval-callback</code>'s debug output, built and run natively via WSL. <code>GET_ROWS</code> is an embedding lookup, <code>MUL_MAT</code> a matrix multiply, <code>FLASH_ATTN_EXT</code> llama.cpp's fused attention kernel (query, key-cache and value-cache in one op, rather than separate matmul-softmax-matmul steps).</figcaption>
 </div>
+</body>
+</html>

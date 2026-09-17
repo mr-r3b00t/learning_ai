@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
+<title>Showing Its Working</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:760px; margin:0 auto; padding:52px 24px 72px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px; }
+  h1{ font-size:clamp(34px,7vw,50px); margin:0 0 18px; font-weight:700; text-wrap:balance; line-height:1.05; }
+  .dek{ font-size:18px; color:var(--ink-dim); max-width:58ch; line-height:1.6; margin:0 0 20px; }
+  .recap{ background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--ink-dim); border-radius:0 10px 10px 0; padding:16px 20px; font-size:14.5px; line-height:1.6; color:var(--ink-dim); margin:0 0 44px; }
+  .recap a, p a{ color:var(--ink); }
+  section{ margin:0 0 48px; }
+  .stepnum{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--ink-dim); font-family:var(--mono); font-size:14px; margin-bottom:12px; }
+  .stepnum.yes{ border-color:var(--accent); color:var(--accent); }
+  .stepnum.no{ border-color:var(--flag); color:var(--flag); }
+  h2{ font-size:26px; margin:0 0 14px; font-weight:700; line-height:1.2; }
+  h3{ font-size:15px; font-family:var(--cond); letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); margin:22px 0 8px; }
+  p{ font-size:17px; line-height:1.65; margin:0 0 16px; max-width:60ch; }
+  p strong{ color:var(--ink); }
+  code{ font-family:var(--mono); font-size:0.9em; background:var(--accent-soft); padding:1px 5px; border-radius:4px; }
+  .analogy{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:18px 22px; font-size:16px; line-height:1.6; color:var(--ink-dim); margin:18px 0; }
+  .analogy b{ color:var(--ink); }
+  .callout{ background:var(--flag-soft); border:1px solid var(--flag); border-radius:10px; padding:16px 20px; font-size:15.5px; line-height:1.6; margin:18px 0; }
+  .callout strong{ color:var(--flag); }
+  .note{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; padding:16px 20px; font-size:15.5px; line-height:1.6; margin:18px 0; }
+  .note strong{ color:var(--accent); }
+
+  .formats{ display:flex; flex-direction:column; gap:10px; margin:18px 0; }
+  .fmt{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:12px 16px; }
+  .fmt .name{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:6px; }
+  .fmt .txt{ font-family:var(--mono); font-size:13.5px; word-break:break-all; line-height:1.7; }
+  .tag{ color:var(--accent); font-weight:600; }
+  .carry{ color:var(--flag); font-weight:600; }
+  .digit{ color:var(--ink); font-weight:600; text-decoration:underline; text-decoration-color:var(--accent); text-underline-offset:3px; }
+  .sep{ color:var(--ink-dim); }
+
+  .accbars{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:12px; padding:20px 24px; margin:20px 0; }
+  .arow{ display:grid; grid-template-columns:130px 1fr 70px; align-items:center; gap:12px; padding:8px 0; }
+  .alabel{ font-size:14px; font-weight:600; }
+  .atrack{ background:var(--line); border-radius:3px; height:22px; overflow:hidden; }
+  .afill{ height:100%; background:var(--flag); }
+  .afill.yes{ background:var(--accent); }
+  .aval{ font-family:var(--mono); font-size:14px; text-align:right; }
+
+  table.grid{ border-collapse:collapse; width:100%; margin:14px 0 18px; font-size:14.5px; background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; overflow:hidden; }
+  table.grid th, table.grid td{ padding:9px 12px; text-align:right; border-top:1px solid var(--line); font-family:var(--mono); font-size:13.5px; }
+  table.grid th{ font-family:var(--cond); font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-dim); border-top:none; }
+  table.grid td.lbl{ text-align:left; font-family:var(--sans); font-weight:600; }
+  table.grid td.n, table.grid .n{ color:var(--ink-dim); font-weight:400; font-size:12px; }
+  table.grid td.big{ color:var(--accent); font-weight:600; }
+  table.grid .what{ font-family:var(--sans); font-weight:400; font-size:12.5px; color:var(--ink-dim); margin-top:2px; max-width:32ch; }
+
+  .losswrap{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0; }
+  .losscol{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:12px 14px; }
+  .losshead{ font-family:var(--cond); font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:8px; }
+  .wrow{ display:grid; grid-template-columns:62px 1fr 48px; align-items:center; gap:8px; padding:4px 0; }
+  .wrow .step{ font-family:var(--mono); font-size:11px; color:var(--ink-dim); }
+  .wtrack{ background:var(--line); border-radius:3px; height:12px; overflow:hidden; }
+  .wfill{ background:var(--flag); height:100%; }
+  .wval{ font-family:var(--mono); font-size:11px; text-align:right; color:var(--ink-dim); }
+
+  ul.outputs{ list-style:none; padding:0; margin:12px 0 18px; font-family:var(--mono); font-size:13px; }
+  ul.outputs li{ padding:8px 12px; border-left:3px solid var(--flag); background:var(--paper-raised); margin-bottom:6px; border-radius:0 8px 8px 0; word-break:break-all; line-height:1.6; }
+  ul.outputs li.ok{ border-left-color:var(--accent); }
+  ul.outputs .q{ font-weight:600; }
+  ul.outputs .out{ color:var(--ink-dim); }
+  ul.outputs .verdict{ font-family:var(--cond); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-dim); }
+  ul.outputs li.ok .verdict{ color:var(--accent); }
+  ul.outputs li.bad .verdict{ color:var(--flag); }
+
+  .ex{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:14px 18px; font-size:14.5px; line-height:1.75; margin:12px 0 22px; }
+  .ex div{ margin-bottom:4px; }
+  .ex code.trace{ background:none; padding:0; font-size:13px; }
+  .ex code.ans{ background:var(--accent-soft); font-weight:600; }
+
+  pre{ background:var(--paper-raised); border:1px solid var(--line-strong); border-radius:10px; padding:14px 18px; font-family:var(--mono); font-size:13px; line-height:1.6; overflow-x:auto; margin:12px 0 18px; }
+  pre .k{ color:var(--accent); }
+  pre .t{ color:var(--flag); }
+  pre .c{ color:var(--ink-dim); }
+
+  .cmp{ width:100%; border-collapse:collapse; margin:14px 0 8px; font-size:14px; }
+  .cmp th, .cmp td{ text-align:left; vertical-align:top; padding:9px 10px; border-top:1px solid var(--line); line-height:1.5; }
+  .cmp th{ font-family:var(--cond); font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-dim); border-top:none; }
+  .cmp td:first-child{ font-weight:600; width:24%; }
+
+  .punchline{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:28px 30px; margin-top:12px; }
+  .punchline h2{ margin-bottom:12px; }
+  .punchline p{ font-size:17px; max-width:none; }
+  .punchline p:last-child{ margin-bottom:0; }
+  .links{ font-size:14px; color:var(--ink-dim); line-height:1.7; margin-top:28px; }
+  .links a{ color:var(--ink); }
+
+  @media (max-width:640px){
+    .page{ padding:36px 16px 56px; }
+    .losswrap{ grid-template-columns:1fr; }
+    .arow{ grid-template-columns:96px 1fr 56px; }
+    table.grid th, table.grid td{ padding:7px 6px; font-size:12px; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+<div class="page">
+  <p class="kicker">Upgrading tiny-shakespeare with "reasoning" &mdash; a real experiment</p>
+  <h1>Showing Its Working</h1>
+  <p class="dek">We asked whether our 10.8-million-number Shakespeare machine could be upgraded to "reason". The honest answer changed the question &mdash; and then we ran the experiment anyway, with the exact same machine. Some of what we expected turned out to be wrong, and the page says so.</p>
+  <div class="recap">Where this fits: <a href="the_whole_story.html">The Whole Story</a> showed how tiny-shakespeare guesses the next letter. <a href="sampling_tree_sheep_riddle.html">The Sheep Riddle</a> showed a real reasoning model, deepseek-r1, writing hundreds of tokens of "thinking" before answering. This page builds the smallest possible version of that second thing, from scratch, and then tests whether the thinking is real.</div>
+
+  <section>
+    <div class="stepnum no">1</div>
+    <h2>You can't bolt reasoning onto the machine</h2>
+    <p>The first thing to know is that deepseek-r1 and tiny-shakespeare are the <strong>same kind of machine</strong>. Both are decoder-only transformers: the same stack of attention and feed-forward blocks, the same next-token guessing loop. r1 is far bigger, but nothing in its wiring is "the reasoning part".</p>
+    <p>What makes r1 "think" is what it was trained on: problems with checkable answers, where writing intermediate steps before the answer got rewarded. The <code>&lt;think&gt;</code> span is simply tokens it learned to produce first. So "reasoning" isn't a feature you add to the architecture. <strong>It's a property of the training text.</strong></p>
+    <p>That leaves Shakespeare with a problem: there is nothing in his plays to reason <em>about</em>. No questions, no answers, no way to be wrong. Training the model to emit a <code>&lt;think&gt;</code> span before more Shakespeare would produce decoration between tags &mdash; exactly the kind of theatre this series warns against.</p>
+    <div class="analogy"><b>So we changed the task, not the machine.</b> Everything below uses the identical architecture file, <code>model.py</code>, unchanged: 10,754,324 numbers, 6 layers, 6 heads, 384-wide, 256 tokens of context. The only thing that differs from tiny-shakespeare is the text it was trained on. That is the whole point.</div>
+  </section>
+
+  <section>
+    <div class="stepnum yes">2</div>
+    <h2>A task with a right answer: adding up</h2>
+    <p>We picked the dullest possible task that still needs several steps: adding two numbers of up to three digits. It's free to generate a million examples, trivial to check, and the carries make it genuinely sequential &mdash; the leftmost digit of the answer depends on what happened at the far right.</p>
+    <p>Then we wrote the same problem three ways. The words in angle brackets are single tokens, just like r1's <code>&lt;think&gt;</code>:</p>
+    <div class="formats">
+      <div class="fmt"><div class="name">Direct &mdash; question, then answer</div><div class="txt"><span class="tag">&lt;q&gt;</span>472+38<span class="tag">&lt;/q&gt;</span><span class="tag">&lt;a&gt;</span>510<span class="tag">&lt;/a&gt;</span></div></div>
+      <div class="fmt"><div class="name">Scratchpad &mdash; long addition, one column per step</div><div class="txt"><span class="tag">&lt;q&gt;</span>472+38<span class="tag">&lt;/q&gt;</span><span class="tag">&lt;think&gt;</span>2+8+0=<span class='carry'>1</span><span class='digit'>0</span><span class='sep'>|</span>7+3+1=<span class='carry'>1</span><span class='digit'>1</span><span class='sep'>|</span>4+0+1=<span class='carry'>0</span><span class='digit'>5</span><span class="tag">&lt;/think&gt;</span><span class="tag">&lt;a&gt;</span>510<span class="tag">&lt;/a&gt;</span></div></div>
+      <div class="fmt"><div class="name">Filler &mdash; the same number of tokens, saying nothing</div><div class="txt"><span class="tag">&lt;q&gt;</span>472+38<span class="tag">&lt;/q&gt;</span><span class="tag">&lt;think&gt;</span>..........................<span class="tag">&lt;/think&gt;</span><span class="tag">&lt;a&gt;</span>510<span class="tag">&lt;/a&gt;</span></div></div>
+    </div>
+    <p>Read the scratchpad right to left, the way you were taught at school: each column is <em>digit + digit + carry-in = <span class="carry">carry-out</span><span class="digit">result</span></em>. The answer is the <span class="digit">result digits</span> read back in reverse, with a leading 1 if the last column carried.</p>
+    <p>The filler version is the control. If the scratchpad model wins just because it gets more tokens to compute over, the filler model should win too. If it's the <em>content</em> of the steps that matters, filler should look like direct.</p>
+  </section>
+
+  <section>
+    <div class="stepnum yes">3</div>
+    <h2>Three identical machines, three different texts</h2>
+    <p>We trained three models from the same random starting point, same seed, same 5,000 training loops, same learning rate and batch size as tiny-shakespeare. Each took about 16 minutes on the same single GPU. The only difference between them is which of the three formats they saw.</p>
+    <p>One deliberate change from the Shakespeare run: the model is only scored on the part it's supposed to write &mdash; everything after <code>&lt;/q&gt;</code>. The question digits are random, so scoring the model on guessing them would just add noise.</p>
+    <div class="callout"><strong>We got the data wrong the first time.</strong> There are only 100 possible single-digit sums, against 810,000 three-digit ones. Our first held-out set was drawn before the training set with no cap, so it swallowed all 100 &mdash; the training text contained not one single-digit sum, and every miss in that run was a single-digit problem (the model wrote <code>004</code> for <code>2+2</code>: right number, wrong shape). We capped how much of each digit class the held-out sets may take, regenerated the data, and retrained all three models. The numbers below are from the second run. The first run's files are kept in <code>reasoning/results/_first_run/</code>.</div>
+    <div class="losswrap">
+      <div class="losscol"><div class="losshead">Direct</div><div class="wrow"><span class="step">step 0</span><div class="wtrack"><div class="wfill" style="width:100.0%"></div></div><span class="wval">3.0517</span></div><div class="wrow"><span class="step">step 500</span><div class="wtrack"><div class="wfill" style="width:39.0%"></div></div><span class="wval">1.1915</span></div><div class="wrow"><span class="step">step 1000</span><div class="wtrack"><div class="wfill" style="width:3.4%"></div></div><span class="wval">0.1041</span></div><div class="wrow"><span class="step">step 2000</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0448</span></div><div class="wrow"><span class="step">step 3000</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0443</span></div><div class="wrow"><span class="step">step 4000</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0433</span></div><div class="wrow"><span class="step">step 4999</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0447</span></div></div>
+<div class="losscol"><div class="losshead">Filler</div><div class="wrow"><span class="step">step 0</span><div class="wtrack"><div class="wfill" style="width:100.0%"></div></div><span class="wval">3.1227</span></div><div class="wrow"><span class="step">step 500</span><div class="wtrack"><div class="wfill" style="width:8.0%"></div></div><span class="wval">0.2486</span></div><div class="wrow"><span class="step">step 1000</span><div class="wtrack"><div class="wfill" style="width:7.0%"></div></div><span class="wval">0.2191</span></div><div class="wrow"><span class="step">step 2000</span><div class="wtrack"><div class="wfill" style="width:5.4%"></div></div><span class="wval">0.1691</span></div><div class="wrow"><span class="step">step 3000</span><div class="wtrack"><div class="wfill" style="width:2.0%"></div></div><span class="wval">0.0628</span></div><div class="wrow"><span class="step">step 4000</span><div class="wtrack"><div class="wfill" style="width:1.6%"></div></div><span class="wval">0.0486</span></div><div class="wrow"><span class="step">step 4999</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0419</span></div></div>
+<div class="losscol"><div class="losshead">Scratchpad</div><div class="wrow"><span class="step">step 0</span><div class="wtrack"><div class="wfill" style="width:100.0%"></div></div><span class="wval">3.2451</span></div><div class="wrow"><span class="step">step 500</span><div class="wtrack"><div class="wfill" style="width:5.9%"></div></div><span class="wval">0.1904</span></div><div class="wrow"><span class="step">step 1000</span><div class="wtrack"><div class="wfill" style="width:1.9%"></div></div><span class="wval">0.0608</span></div><div class="wrow"><span class="step">step 2000</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0463</span></div><div class="wrow"><span class="step">step 3000</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0460</span></div><div class="wrow"><span class="step">step 4000</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0461</span></div><div class="wrow"><span class="step">step 4999</span><div class="wtrack"><div class="wfill" style="width:1.5%"></div></div><span class="wval">0.0457</span></div></div>
+    </div>
+    <p style="font-size:14.5px;color:var(--ink-dim)">These are "how wrong" scores on problems the models never trained on, like the bars in <a href="getting_less_wrong.html">Getting Less Wrong</a>. They are not comparable across the three columns &mdash; the scratchpad model is scored on far more tokens than the direct one &mdash; so don't read the heights against each other. What matters is the next section.</p>
+  </section>
+
+  <section>
+    <div class="stepnum no">4</div>
+    <h2>The result: writing the steps did not help</h2>
+    <p>We gave each model 2,000 problems it had never seen and checked whether the final answer between <code>&lt;a&gt;</code> and <code>&lt;/a&gt;</code> was exactly right. Greedy decoding &mdash; the most probable token every time &mdash; so every answer is a deterministic function of the weights and the question.</p>
+    <div class="accbars">
+      <div class="arow"><span class="alabel">Direct answer</span><div class="atrack"><div class="afill no" style="width:100.0%"></div></div><span class="aval">100.0%</span></div>
+      <div class="arow"><span class="alabel">Filler dots</span><div class="atrack"><div class="afill no" style="width:98.7%"></div></div><span class="aval">98.7%</span></div>
+      <div class="arow"><span class="alabel">Scratchpad</span><div class="atrack"><div class="afill yes" style="width:100.0%"></div></div><span class="aval">100.0%</span></div>
+    </div>
+    <p>We expected the scratchpad model to win, especially on sums with several carries. It didn't, because there was nothing to win: <strong>the direct model already gets every one of the 2,000 sums right.</strong> Adding two three-digit numbers, given 300,000 worked examples and 5,000 training loops, is within reach of this machine in a single pass, with no steps written down at all. Broken down by carries:</p>
+    <table class='grid'><thead><tr><th></th><th>0 carries</th><th>1 carry</th><th>2 carries</th><th>3 carries</th></tr></thead><tbody><tr><td class='lbl'>Direct</td><td>100.0%</td><td>100.0%</td><td>100.0%</td><td>100.0%</td></tr><tr><td class='lbl'>Filler</td><td>99.2%</td><td>98.5%</td><td>98.0%</td><td>96.6%</td></tr><tr><td class='lbl'>Scratchpad</td><td>100.0%</td><td>100.0%</td><td>100.0%</td><td>100.0%</td></tr><tr><td class='lbl n'>problems</td><td class='n'>n=762</td><td class='n'>n=823</td><td class='n'>n=356</td><td class='n'>n=59</td></tr></tbody></table>
+    <p>The only model that <em>lost</em> anything was the filler one. It got 27 sums wrong, and 21 of those 27 numeric misses were off by exactly +100: a carry lost in the hundreds column. The dots aren't free &mdash; the answer now has to reach back across 26 tokens of nothing to find the question, and occasionally it fumbles.</p>
+    <h3>What the direct model actually writes</h3>
+    <ul class='outputs'><li class='ok'><span class='q'>646+474</span> <span class='out'>&lt;a&gt;1120&lt;/a&gt;</span> <span class='verdict'>correct</span></li><li class='ok'><span class='q'>699+269</span> <span class='out'>&lt;a&gt;968&lt;/a&gt;</span> <span class='verdict'>correct</span></li><li class='ok'><span class='q'>49+99</span> <span class='out'>&lt;a&gt;148&lt;/a&gt;</span> <span class='verdict'>correct</span></li></ul>
+    <h3>What the scratchpad model actually writes</h3>
+    <ul class='outputs'><li class='ok'><span class='q'>646+474</span> <span class='out'>&lt;think&gt;6+4+0=10|4+7+1=12|6+4+1=11&lt;/think&gt;&lt;a&gt;1120&lt;/a&gt;</span> <span class='verdict'>correct</span></li><li class='ok'><span class='q'>699+269</span> <span class='out'>&lt;think&gt;9+9+0=18|9+6+1=16|6+2+1=09&lt;/think&gt;&lt;a&gt;968&lt;/a&gt;</span> <span class='verdict'>correct</span></li><li class='ok'><span class='q'>49+99</span> <span class='out'>&lt;think&gt;9+9+0=18|4+9+1=14&lt;/think&gt;&lt;a&gt;148&lt;/a&gt;</span> <span class='verdict'>correct</span></li></ul>
+    <div class="note"><strong>The trace itself is checkable.</strong> Because we know the correct working for every problem, we can grade the scratchpad too, not just the answer. The scratchpad model's working matched the correct long-addition trace, character for character, on <strong>100.0%</strong> of unseen problems. Out of 2,000 problems, 0 were answered correctly despite a flawed trace and 0 were answered wrongly despite a perfect trace: the answer and the working almost always stand or fall together.</div>
+    <div class="callout"><strong>Why this matters for the big models.</strong> r1-style thinking helps on problems that are too hard to solve in one pass &mdash; that is the whole reason it was trained in. Give the same trick to a task the machine can already do directly, and you get the same answer with more tokens. "Reasoning" is not a free upgrade; it pays only where the direct route fails.</div>
+  </section>
+
+  <section>
+    <div class="stepnum no">4b</div>
+    <h2>Longer sums: both models fall off a cliff</h2>
+    <p>If the scratchpad model had learned <em>the algorithm</em> &mdash; one column at a time, carry forward &mdash; it should manage a four-digit sum, even though it never saw one. So we asked both models for sums of four, five and six digits. Nothing was retrained.</p>
+    <table class='grid'><thead><tr><th></th><th>3 digits</th><th>4 digits</th><th>5 digits</th><th>6 digits</th></tr></thead><tbody><tr><td class='lbl'>Direct</td><td>100.0%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr><tr><td class='lbl'>Filler</td><td>93.8%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr><tr><td class='lbl'>Scratchpad</td><td>100.0%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr><tr><td class='lbl n'>seen in training?</td><td class='n'>yes</td><td class='n'>never</td><td class='n'>never</td><td class='n'>never</td></tr></tbody></table>
+    <ul class='outputs'><li class='bad'><span class='q'>Direct: 5625+8173</span> <span class='out'>&lt;a&gt;1379&lt;/a&gt;</span> <span class='verdict'>wrong, should be 13798</span></li><li class='bad'><span class='q'>Scratchpad: 5625+8173</span> <span class='out'>&lt;think&gt;5+3+0=08|6+7+0=13|5+1+1=07&lt;/think&gt;&lt;a&gt;738&lt;/a&gt;</span> <span class='verdict'>wrong, should be 13798</span></li></ul>
+    <p>Neither generalises at all. The direct model writes a three-digit-shaped answer. The scratchpad model writes <strong>exactly three columns and stops</strong>, then reads its answer off a trace that ignored the fourth digit. What it learned was "three-digit long addition", not "long addition". The working is real, but it is a habit of a fixed length, not a rule the model can extend.</p>
+  </section>
+
+  <section>
+    <div class="stepnum yes">4c</div>
+    <h2>Less practice: where the formats separate</h2>
+    <p>The last place the two formats can differ is how much they need to see. We retrained the direct and scratchpad models from scratch on only the first <strong>3,000</strong> of the 300,000 worked examples, for 2,500 loops, and tested on the same 2,000 unseen sums.</p>
+    <div class="accbars">
+      <div class="arow"><span class="alabel">Direct</span><div class="atrack"><div class="afill no" style="width:80.4%"></div></div><span class="aval">80.4%</span></div>
+      <div class="arow"><span class="alabel">Scratchpad</span><div class="atrack"><div class="afill yes" style="width:100.0%"></div></div><span class="aval">100.0%</span></div>
+    </div>
+    <p>Here the two formats finally separate. With only 3,000 worked examples, the direct model reaches 80.4% on unseen sums while the scratchpad model reaches 100.0% &mdash; and its working matches the correct trace on 100.0% of them. Every column of the scratchpad is a small, repeated rule, so each example teaches the model about 29 things instead of about 3. That is the mechanism by which showing the working helps: not extra thinking time, but denser, more checkable practice.</p>
+  </section>
+
+  <section>
+    <div class="stepnum yes">5</div>
+    <h2>Is the working real, or decoration?</h2>
+    <p>None of the above says whether the visible steps are what <em>produce</em> the answer. A model could, in principle, write a plausible trace and then compute the answer some other way &mdash; the direct model proves it can add without any trace at all. That's the faithfulness question we left open on <a href="the_larger_journey.html">The Larger Journey</a>, and with a model we fully own we can test it directly.</p>
+    <p>The method is simple: we write part of the trace ourselves, corrupt it, and let the model carry on. If the answer follows our corruption, the answer is being read off the trace. If the answer stays correct, the trace is being ignored.</p>
+    <table class="grid">
+      <thead><tr><th></th><th>follows the trace</th><th>follows the truth</th><th>other</th><th>n/a</th></tr></thead>
+      <tbody>
+        <tr><td class='lbl'>A. Swap one digit<div class='what'>Force the whole correct trace with one result digit changed.</div></td><td class='big'>100.0%</td><td>0.0%</td><td>0.0%</td><td class='n'>0</td></tr>
+        <tr><td class='lbl'>B. Flip one carry<div class='what'>Force the trace up to a column with its carry flipped; let the model continue.</div></td><td class='big'>100.0%</td><td>0.0%</td><td>0.0%</td><td class='n'>0</td></tr>
+        <tr><td class='lbl'>C. Wrong sum's trace<div class='what'>Force the correct working for a different sum entirely.</div></td><td class='big'>100.0%</td><td>0.0%</td><td>0.1%</td><td class='n'>0</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:14px;color:var(--ink-dim)">"n/a" counts cases where the corrupted trace happened to imply the true answer anyway, so the two can't be told apart. Percentages are of all 2,000 test problems (B uses the 1,980 problems with two or more columns).</p>
+    <h3>A: swap one digit</h3>
+    <div class='ex'><div><b>Question</b> <code>646+474</code> (true answer 1120)</div><div><b>Trace we forced</b> <code class='trace'>6+4+0=<span class='carry'>1</span><span class='digit'>0</span><span class='sep'>|</span>4+7+1=<span class='carry'>1</span><span class='digit'>5</span><span class='sep'>|</span>6+4+1=<span class='carry'>1</span><span class='digit'>1</span></code> &mdash; one result digit changed, so the trace now implies <code>1150</code></div><div><b>Model answered</b> <code class='ans'>1150</code></div></div>
+    <h3>B: flip one carry</h3>
+    <p>This one tests whether the steps are <em>chained</em>: does a wrong carry in column one propagate into column two? On <strong>100.0%</strong> of problems the model's continuation was exactly what the wrong carry implies, step by step, to the final answer.</p>
+    <div class='ex'><div><b>Question</b> <code>646+474</code> (true answer 1120)</div><div><b>Correct trace</b> <code class='trace'>6+4+0=<span class='carry'>1</span><span class='digit'>0</span><span class='sep'>|</span>4+7+1=<span class='carry'>1</span><span class='digit'>2</span><span class='sep'>|</span>6+4+1=<span class='carry'>1</span><span class='digit'>1</span></code></div><div><b>We forced</b> <code class='trace'>6+4+0=<span class='carry'>1</span><span class='digit'>0</span><span class='sep'>|</span>4+7+1=<span class='carry'>0</span><span class='digit'>2</span></code><span class='sep'>|</span> &mdash; with the carry flipped &mdash; then let it continue</div><div><b>Model continued</b> <code class='trace'>6+4+0=<span class='carry'>1</span><span class='digit'>0</span><span class='sep'>|</span>4+7+1=<span class='carry'>0</span><span class='digit'>2</span><span class='sep'>|</span>6+4+0=<span class='carry'>1</span><span class='digit'>0</span></code> and answered <code class='ans'>1020</code>, which is exactly what the wrong carry implies (1020)</div></div>
+    <h3>C: the wrong sum's working</h3>
+    <div class='ex'><div><b>Question</b> <code>646+474</code> (true answer 1120)</div><div><b>Trace we forced</b> the correct working for a <em>different</em> sum, 51+732: <code class='trace'>1+2+0=<span class='carry'>0</span><span class='digit'>3</span><span class='sep'>|</span>5+3+0=<span class='carry'>0</span><span class='digit'>8</span><span class='sep'>|</span>0+7+0=<span class='carry'>0</span><span class='digit'>7</span></code></div><div><b>Model answered</b> <code class='ans'>783</code> &mdash; the answer to 51+732, not to the question it was asked</div></div>
+    <p style='font-size:14.5px;color:var(--ink-dim)'>The exception is worth a look. Asked <code>7+680</code> but handed the working for 925+786 (which implies 1711), the model answered <code>171</code>: it copied the trace's digits but dropped the leading carry, apparently because a 3-digit question is not supposed to produce a 4-digit answer. So the question still exerts a small pull of its own; the trace is dominant, not the only input.</p>
+    <h3>D: no working at all</h3>
+    <p>Finally we forced an empty <code>&lt;think&gt;&lt;/think&gt;</code> and made the scratchpad model answer immediately. It got <strong>0.2%</strong> right. That's outside anything it was trained on, so it's weak evidence on its own &mdash; but it lines up with the rest.</p>
+    <div class="callout"><strong>What this establishes, precisely:</strong> in this model the visible steps are causally upstream of the answer. Corrupt the working and the answer follows the corruption, not the truth. The "reasoning" is real in exactly the mechanical sense this series has used throughout &mdash; a trained span of tokens that the rest of the computation depends on &mdash; and in no other sense.</div>
+  </section>
+
+  <section>
+    <div class="stepnum yes">6</div>
+    <h2>Running it in Ollama, like r1</h2>
+    <p>The scratchpad model was converted to GGUF with the <a href="pipeline-diagram.html">same conversion</a> as tiny-shakespeare, plus one addition: the six delimiter tokens are written as "added tokens" so llama.cpp treats <code>&lt;think&gt;</code> as one token. That's how r1's own tokenizer marks them.</p>
+    <p>Ollama then does what it does for r1: it spots the tags and splits the output into a <code>thinking</code> field and a <code>content</code> field. Here is the real response, straight from the API:</p>
+<pre><span class="c"># curl http://localhost:11434/api/chat  (model: tiny-adder, think: true)</span>
+<span class="k">user</span>      472+38
+<span class="t">thinking</span>  2+8+0=10|7+3+1=11|4+0+1=05
+<span class="k">content</span>   &lt;a&gt;510
+<span class="c">prompt tokens 8, generated tokens 33, done_reason stop, total 2925 ms</span></pre>
+    <p>And because it's an ordinary Ollama model now, every tool built earlier in this project works on it unchanged. The <a href="sampling_tree_tiny_adder.html">sampling tree for this exact response</a> shows the probability the model put on each digit of its working, token by token.</p>
+    <h3>How this compares to the real thing</h3>
+    <table class="cmp">
+      <thead><tr><th></th><th>tiny-adder</th><th>deepseek-r1</th></tr></thead>
+      <tbody>
+        <tr><td>Architecture</td><td>decoder-only transformer, 6 layers</td><td>decoder-only transformer, 32 layers (8B distil)</td></tr>
+        <tr><td>Think delimiters</td><td><code>&lt;think&gt;</code> <code>&lt;/think&gt;</code> as added tokens</td><td><code>&lt;think&gt;</code> <code>&lt;/think&gt;</code> as added tokens (ids 128798, 128799)</td></tr>
+        <tr><td>Where the working came from</td><td>we wrote the traces with a 15-line Python function and trained on them (supervised)</td><td>traces emerged from reinforcement learning on checkable answers, then were distilled into smaller models (supervised)</td></tr>
+        <tr><td>What it can reason about</td><td>addition of numbers up to 999</td><td>very broadly, but not verifiably</td></tr>
+        <tr><td>Can we check the working?</td><td>yes, character by character</td><td>only by reading it and judging</td></tr>
+        <tr><td>Is the working faithful?</td><td>tested above: yes, causally</td><td>unknown; cannot be tested this way at this scale</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="punchline">
+    <h2>So: can tiny-shakespeare reason?</h2>
+    <p>Not about Shakespeare, and nothing we could add to the machine would change that. The same machine, shown worked additions, did learn to write its working before its answer &mdash; and when we tampered with that working, the answer followed the tampering. That is what "reasoning" cashes out to inside these systems: a learned habit of writing intermediate tokens that the later computation depends on.</p>
+    <p>But the experiment also refused to flatter the idea. On this task the working bought no accuracy, because the machine could already do the sum in one pass. It did not extend to longer sums, because the habit was three columns long. What the working <em>did</em> buy is the thing this whole series has been about: the intermediate results came out <strong>as tokens, where we could read them and check them</strong> &mdash; unlike the 10,754,324 numbers in <a href="the_missing_index.html">The Missing Index</a>, which still have no dictionary. Reasoning, in the only sense we could measure, is visibility. Whether it also makes the answer better depends entirely on whether the answer was out of reach without it.</p>
+  </div>
+
+  <div class="links">Reproduce it: everything lives in <code>reasoning/</code>. <code>adder_data.py</code> makes the examples; <code>train_adder.py --variant scratchpad|direct|filler</code> trains each model; <code>eval_adder.py</code> scores them; <code>faithfulness.py</code> runs the four interventions; <code>to_gguf_adder.py</code> plus the <code>Modelfile</code> make the Ollama model. This page reads its numbers from the JSON those scripts write.</div>
+</div>
+</body>
+</html>

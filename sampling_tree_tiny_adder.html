@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0;}</style>
+<title>Showing Its Working, Token by Token</title>
+<style>
+  :root{
+    --paper:#eef2f5; --paper-raised:#ffffff; --ink:#1c3f66; --ink-dim:#5c7999;
+    --line:rgba(28,63,102,0.20); --line-strong:rgba(28,63,102,0.34);
+    --accent:#c9793a; --accent-soft:rgba(201,121,58,0.14);
+    --flag:#c1495c; --flag-soft:rgba(193,73,92,0.14);
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+    --cond:'IBM Plex Sans Condensed','IBM Plex Sans', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+      --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+      --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+      --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0d2444; --paper-raised:#13315a; --ink:#e8f1fb; --ink-dim:#9db6d4;
+    --line:rgba(232,241,251,0.16); --line-strong:rgba(232,241,251,0.30);
+    --accent:#e2984f; --accent-soft:rgba(226,152,79,0.16);
+    --flag:#e8778a; --flag-soft:rgba(232,119,138,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ background:var(--paper); color:var(--ink); font-family:var(--sans); }
+  .page{ max-width:1040px; margin:0 auto; padding:40px 24px 56px; }
+  .kicker{ font-family:var(--cond); font-weight:600; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,40px); margin:0 0 12px; font-weight:700; text-wrap:balance; }
+  .sub{ font-size:14.5px; color:var(--ink-dim); max-width:70ch; line-height:1.6; margin:0 0 18px; }
+  .meta{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:14px 18px; padding:16px 0; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); margin-bottom:16px; }
+  .meta dt{ font-family:var(--cond); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 3px; }
+  .meta dd{ font-family:var(--mono); font-size:14px; margin:0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .excerpt{ margin:0 0 20px; overflow-x:auto; background:var(--paper-raised); border:1px solid var(--line-strong); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 16px; }
+  .excerpt .src{ font-family:var(--cond); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dim); display:block; margin-bottom:6px; }
+  .excerpt pre{ margin:0; font-family:var(--mono); font-size:13px; line-height:1.6; white-space:pre-wrap; }
+  .note{ font-size:12.5px; line-height:1.6; color:var(--ink-dim); background:var(--accent-soft); border:1px dashed var(--line-strong); border-radius:8px; padding:10px 14px; margin:0 0 16px; }
+  .note code{ font-family:var(--mono); background:var(--paper); padding:0 3px; border-radius:3px; }
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--ink-dim); }
+  .legend span.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .graph-wrap{ border:1px solid var(--line-strong); border-radius:10px; background:var(--paper-raised); overflow:hidden; }
+  #network{ width:100%; height:600px; }
+  figcaption{ font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5; }
+  @media (max-width:560px){ .page{ padding:28px 16px 40px; } #network{ height:440px; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
+
+</head>
+<body>
+<div class="page">
+  <p class="kicker">Phase 4 of the tiny-adder experiment &mdash; real Ollama output, greedy decoding</p>
+  <h1>Showing Its Working, Token by Token</h1>
+  <p class="sub">The scratchpad model answering 472+38 through Ollama. Every branch is a token that received nonzero probability at that step; the copper path is what greedy decoding actually chose. Ollama routes the &lt;think&gt; and &lt;/think&gt; tokens to the thinking field, so they are absent here; everything between them is the model's working.</p>
+  <dl class="meta" id="meta"></dl>
+  <div class="excerpt"><span class="src">prompt</span><pre id="prompttext"></pre></div>
+  <div class="excerpt" id="reasoning-block" style="display:none;"><span class="src">token span Ollama's API labels <code>message.reasoning</code></span><pre id="reasoningtext"></pre></div>
+  <div class="note">This is a computer process, not thought: each step is one forward pass producing 20 numbers (one per token in the vocabulary), and greedy decoding picks the largest. The near-certainty on most steps is what a fully learned algorithm looks like from the outside.</div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span>sampled &mdash; was also the top-probability token</span>
+    <span><span class="dot" style="background:var(--flag)"></span>sampled &mdash; fell outside the shown top-k despite lower probability</span>
+    <span><span class="dot" style="background:var(--paper-raised);border:1px solid var(--line-strong)"></span>nonzero probability, not sampled</span>
+  </div>
+  <div class="graph-wrap"><div id="network"></div></div>
+  <figcaption>Built with vis-network from a real trace via Ollama's logprobs API: at every step the model's top candidate tokens and their real probabilities were captured, and the next token drawn by the server's own sampling -- not scripted.</figcaption>
+</div>
+
+<script type="application/json" id="trace-data">{"timestamp": "2026-09-17T17:22:17", "model": "tiny-adder", "prompt": "472+38", "steps": 30, "topk": 5, "temperature": 0.0, "full_text": "2+8+0=10|7+3+1=11|4+0+1=05<a>510", "reasoning": "2+8+0=10|7+3+1=11|4+0+1=05", "answer": "<a>510", "usage": {"prompt_tokens": 8, "prompt_tokens_details": {"cached_tokens": 7}, "completion_tokens": 33, "total_tokens": 41}, "trace": [{"step": 0, "candidates": [{"token": "2", "prob": 0.99999, "char_disp": "2"}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "8", "prob": 0.0, "char_disp": "8"}, {"token": "<think>", "prob": 0.0, "char_disp": "<think>"}, {"token": "6", "prob": 0.0, "char_disp": "6"}], "chosen": {"token": "2", "prob": 0.99999, "in_topk": true, "char_disp": "2"}}, {"step": 1, "candidates": [{"token": "+", "prob": 1.0, "char_disp": "+"}, {"token": "<think>", "prob": 0.0, "char_disp": "<think>"}, {"token": "|", "prob": 0.0, "char_disp": "|"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}], "chosen": {"token": "+", "prob": 1.0, "in_topk": true, "char_disp": "+"}}, {"step": 2, "candidates": [{"token": "8", "prob": 1.0, "char_disp": "8"}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "4", "prob": 0.0, "char_disp": "4"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "1", "prob": 0.0, "char_disp": "1"}], "chosen": {"token": "8", "prob": 1.0, "in_topk": true, "char_disp": "8"}}, {"step": 3, "candidates": [{"token": "+", "prob": 1.0, "char_disp": "+"}, {"token": "<think>", "prob": 0.0, "char_disp": "<think>"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": ".", "prob": 0.0, "char_disp": "."}], "chosen": {"token": "+", "prob": 1.0, "in_topk": true, "char_disp": "+"}}, {"step": 4, "candidates": [{"token": "0", "prob": 1.0, "char_disp": "0"}, {"token": "=", "prob": 0.0, "char_disp": "="}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": "<think>", "prob": 0.0, "char_disp": "<think>"}, {"token": "|", "prob": 0.0, "char_disp": "|"}], "chosen": {"token": "0", "prob": 1.0, "in_topk": true, "char_disp": "0"}}, {"step": 5, "candidates": [{"token": "=", "prob": 0.99996, "char_disp": "="}, {"token": "+", "prob": 3e-05, "char_disp": "+"}, {"token": "<think>", "prob": 1e-05, "char_disp": "<think>"}, {"token": "<a>", "prob": 0.0, "char_disp": "<a>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}], "chosen": {"token": "=", "prob": 0.99996, "in_topk": true, "char_disp": "="}}, {"step": 6, "candidates": [{"token": "1", "prob": 1.0, "char_disp": "1"}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "=", "prob": 0.0, "char_disp": "="}, {"token": "|", "prob": 0.0, "char_disp": "|"}], "chosen": {"token": "1", "prob": 1.0, "in_topk": true, "char_disp": "1"}}, {"step": 7, "candidates": [{"token": "0", "prob": 1.0, "char_disp": "0"}, {"token": "4", "prob": 0.0, "char_disp": "4"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": ".", "prob": 0.0, "char_disp": "."}], "chosen": {"token": "0", "prob": 1.0, "in_topk": true, "char_disp": "0"}}, {"step": 8, "candidates": [{"token": "|", "prob": 0.99999, "char_disp": "|"}, {"token": "</think>", "prob": 0.0, "char_disp": "</think>"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": "<think>", "prob": 0.0, "char_disp": "<think>"}], "chosen": {"token": "|", "prob": 0.99999, "in_topk": true, "char_disp": "|"}}, {"step": 9, "candidates": [{"token": "7", "prob": 0.99999, "char_disp": "7"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "3", "prob": 0.0, "char_disp": "3"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "9", "prob": 0.0, "char_disp": "9"}], "chosen": {"token": "7", "prob": 0.99999, "in_topk": true, "char_disp": "7"}}, {"step": 10, "candidates": [{"token": "+", "prob": 1.0, "char_disp": "+"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": ".", "prob": 0.0, "char_disp": "."}, {"token": "|", "prob": 0.0, "char_disp": "|"}], "chosen": {"token": "+", "prob": 1.0, "in_topk": true, "char_disp": "+"}}, {"step": 11, "candidates": [{"token": "3", "prob": 1.0, "char_disp": "3"}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": "7", "prob": 0.0, "char_disp": "7"}], "chosen": {"token": "3", "prob": 1.0, "in_topk": true, "char_disp": "3"}}, {"step": 12, "candidates": [{"token": "+", "prob": 1.0, "char_disp": "+"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}, {"token": ".", "prob": 0.0, "char_disp": "."}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}], "chosen": {"token": "+", "prob": 1.0, "in_topk": true, "char_disp": "+"}}, {"step": 13, "candidates": [{"token": "1", "prob": 1.0, "char_disp": "1"}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "=", "prob": 0.0, "char_disp": "="}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}], "chosen": {"token": "1", "prob": 1.0, "in_topk": true, "char_disp": "1"}}, {"step": 14, "candidates": [{"token": "=", "prob": 1.0, "char_disp": "="}, {"token": "+", "prob": 0.0, "char_disp": "+"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": ".", "prob": 0.0, "char_disp": "."}], "chosen": {"token": "=", "prob": 1.0, "in_topk": true, "char_disp": "="}}, {"step": 15, "candidates": [{"token": "1", "prob": 1.0, "char_disp": "1"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "7", "prob": 0.0, "char_disp": "7"}, {"token": "9", "prob": 0.0, "char_disp": "9"}], "chosen": {"token": "1", "prob": 1.0, "in_topk": true, "char_disp": "1"}}, {"step": 16, "candidates": [{"token": "1", "prob": 0.99997, "char_disp": "1"}, {"token": "0", "prob": 3e-05, "char_disp": "0"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "3", "prob": 0.0, "char_disp": "3"}, {"token": "2", "prob": 0.0, "char_disp": "2"}], "chosen": {"token": "1", "prob": 0.99997, "in_topk": true, "char_disp": "1"}}, {"step": 17, "candidates": [{"token": "|", "prob": 0.99994, "char_disp": "|"}, {"token": "</think>", "prob": 6e-05, "char_disp": "</think>"}, {"token": "+", "prob": 0.0, "char_disp": "+"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}], "chosen": {"token": "|", "prob": 0.99994, "in_topk": true, "char_disp": "|"}}, {"step": 18, "candidates": [{"token": "4", "prob": 0.99998, "char_disp": "4"}, {"token": "5", "prob": 1e-05, "char_disp": "5"}, {"token": "6", "prob": 0.0, "char_disp": "6"}, {"token": "8", "prob": 0.0, "char_disp": "8"}, {"token": "2", "prob": 0.0, "char_disp": "2"}], "chosen": {"token": "4", "prob": 0.99998, "in_topk": true, "char_disp": "4"}}, {"step": 19, "candidates": [{"token": "+", "prob": 1.0, "char_disp": "+"}, {"token": "</think>", "prob": 0.0, "char_disp": "</think>"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}], "chosen": {"token": "+", "prob": 1.0, "in_topk": true, "char_disp": "+"}}, {"step": 20, "candidates": [{"token": "0", "prob": 0.99999, "char_disp": "0"}, {"token": "+", "prob": 1e-05, "char_disp": "+"}, {"token": "8", "prob": 0.0, "char_disp": "8"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "7", "prob": 0.0, "char_disp": "7"}], "chosen": {"token": "0", "prob": 0.99999, "in_topk": true, "char_disp": "0"}}, {"step": 21, "candidates": [{"token": "+", "prob": 1.0, "char_disp": "+"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": ".", "prob": 0.0, "char_disp": "."}], "chosen": {"token": "+", "prob": 1.0, "in_topk": true, "char_disp": "+"}}, {"step": 22, "candidates": [{"token": "1", "prob": 1.0, "char_disp": "1"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "=", "prob": 0.0, "char_disp": "="}, {"token": "0", "prob": 0.0, "char_disp": "0"}, {"token": "2", "prob": 0.0, "char_disp": "2"}], "chosen": {"token": "1", "prob": 1.0, "in_topk": true, "char_disp": "1"}}, {"step": 23, "candidates": [{"token": "=", "prob": 1.0, "char_disp": "="}, {"token": "+", "prob": 0.0, "char_disp": "+"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": ".", "prob": 0.0, "char_disp": "."}], "chosen": {"token": "=", "prob": 1.0, "in_topk": true, "char_disp": "="}}, {"step": 24, "candidates": [{"token": "0", "prob": 1.0, "char_disp": "0"}, {"token": "</think>", "prob": 0.0, "char_disp": "</think>"}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": "6", "prob": 0.0, "char_disp": "6"}, {"token": "<think>", "prob": 0.0, "char_disp": "<think>"}], "chosen": {"token": "0", "prob": 1.0, "in_topk": true, "char_disp": "0"}}, {"step": 25, "candidates": [{"token": "5", "prob": 1.0, "char_disp": "5"}, {"token": "6", "prob": 0.0, "char_disp": "6"}, {"token": "1", "prob": 0.0, "char_disp": "1"}, {"token": "9", "prob": 0.0, "char_disp": "9"}, {"token": "4", "prob": 0.0, "char_disp": "4"}], "chosen": {"token": "5", "prob": 1.0, "in_topk": true, "char_disp": "5"}}, {"step": 26, "candidates": [{"token": "<a>", "prob": 1.0, "char_disp": "<a>"}, {"token": "<q>", "prob": 0.0, "char_disp": "<q>"}, {"token": ".", "prob": 0.0, "char_disp": "."}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": "4", "prob": 0.0, "char_disp": "4"}], "chosen": {"token": "<a>", "prob": 1.0, "in_topk": true, "char_disp": "<a>"}}, {"step": 27, "candidates": [{"token": "5", "prob": 1.0, "char_disp": "5"}, {"token": "6", "prob": 0.0, "char_disp": "6"}, {"token": "4", "prob": 0.0, "char_disp": "4"}, {"token": "</q>", "prob": 0.0, "char_disp": "</q>"}, {"token": "7", "prob": 0.0, "char_disp": "7"}], "chosen": {"token": "5", "prob": 1.0, "in_topk": true, "char_disp": "5"}}, {"step": 28, "candidates": [{"token": "1", "prob": 1.0, "char_disp": "1"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "2", "prob": 0.0, "char_disp": "2"}, {"token": "3", "prob": 0.0, "char_disp": "3"}, {"token": "7", "prob": 0.0, "char_disp": "7"}], "chosen": {"token": "1", "prob": 1.0, "in_topk": true, "char_disp": "1"}}, {"step": 29, "candidates": [{"token": "0", "prob": 1.0, "char_disp": "0"}, {"token": "5", "prob": 0.0, "char_disp": "5"}, {"token": "6", "prob": 0.0, "char_disp": "6"}, {"token": "9", "prob": 0.0, "char_disp": "9"}, {"token": "</a>", "prob": 0.0, "char_disp": "</a>"}], "chosen": {"token": "0", "prob": 1.0, "in_topk": true, "char_disp": "0"}}]}</script>
+<script>
+function showError(message){
+  var el = document.getElementById('network');
+  el.innerHTML = '<div style="padding:24px;font-family:var(--mono);font-size:13px;color:var(--flag);line-height:1.6;">'
+    + '<strong>Could not render the graph.</strong><br>' + message + '</div>';
+}
+
+try {
+  if (typeof vis === 'undefined') {
+    throw new Error('The vis-network library did not load from cdnjs.cloudflare.com. This usually means an ad blocker, privacy extension, or network filter is blocking that domain -- try disabling extensions for this page, or an incognito window.');
+  }
+
+  var data = JSON.parse(document.getElementById('trace-data').textContent);
+
+  var metaEl = document.getElementById('meta');
+  var fields = [["Model", "tiny-adder"], ["Steps", 30], ["Top-k shown", 5], ["Temperature", 0.0], ["Tokens", 33]];
+  metaEl.innerHTML = fields.map(function(kv){ return '<div><dt>' + kv[0] + '</dt><dd>' + String(kv[1]).replace(/</g,'&lt;') + '</dd></div>'; }).join('');
+  document.getElementById('prompttext').textContent = data.prompt;
+  if (data.reasoning) {
+    document.getElementById('reasoning-block').style.display = '';
+    document.getElementById('reasoningtext').textContent = data.reasoning;
+  }
+
+  function getVar(name){
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || '#888888';
+  }
+  var ACCENT = getVar('--accent'), FLAG = getVar('--flag'), INK = getVar('--ink'),
+      INK_DIM = getVar('--ink-dim'), PAPER_RAISED = getVar('--paper-raised'),
+      LINE_STRONG = getVar('--line-strong');
+
+  var nodes = [];
+  var edges = [];
+  nodes.push({ id: 'root', label: (data.prompt.length > 24 ? data.prompt.slice(0,24) + '...' : data.prompt), level: 0, shape: 'box',
+    color: { background: PAPER_RAISED, border: INK },
+    font: { color: INK, face: 'IBM Plex Mono', size: 13, bold: true },
+    borderWidth: 2, margin: 8 });
+
+  var contextNode = 'root';
+
+  data.trace.forEach(function(step, i){
+    var level = i + 1;
+    var trunkNodeId = null;
+
+    step.candidates.forEach(function(c){
+      var nid = 's' + i + '_' + c.token.replace(/[^a-zA-Z0-9]/g, '') + '_' + i + '_' + Math.random().toString(36).slice(2,6);
+      var isChosen = step.chosen.in_topk && c.token === step.chosen.token;
+      nodes.push({
+        id: nid, level: level,
+        label: c.char_disp,
+        shape: 'box',
+        color: isChosen
+          ? { background: ACCENT, border: ACCENT }
+          : { background: PAPER_RAISED, border: LINE_STRONG },
+        font: { color: isChosen ? '#ffffff' : INK_DIM, face: 'IBM Plex Mono', size: isChosen ? 15 : 12 },
+        borderWidth: isChosen ? 2 : 1,
+        title: "'" + c.char_disp + "' -- " + (c.prob*100).toFixed(3) + '%' + (isChosen ? ' (chosen)' : ''),
+      });
+      edges.push({
+        from: contextNode, to: nid,
+        width: isChosen ? 3 : 1,
+        color: { color: isChosen ? ACCENT : LINE_STRONG, opacity: isChosen ? 1 : 0.6 },
+        label: isChosen ? (c.prob*100).toFixed(1) + '%' : '',
+        font: { color: ACCENT, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      if (isChosen) trunkNodeId = nid;
+    });
+
+    if (!step.chosen.in_topk) {
+      var nid2 = 's' + i + '_surprise_' + Math.random().toString(36).slice(2,6);
+      nodes.push({
+        id: nid2, level: level,
+        label: step.chosen.char_disp,
+        shape: 'box',
+        color: { background: FLAG, border: FLAG },
+        font: { color: '#ffffff', face: 'IBM Plex Mono', size: 15 },
+        borderWidth: 2,
+        title: "'" + step.chosen.char_disp + "' -- " + (step.chosen.prob*100).toFixed(3) + '% (chosen, outside shown top-' + data.topk + ')',
+      });
+      edges.push({
+        from: contextNode, to: nid2,
+        width: 3,
+        color: { color: FLAG, opacity: 1 },
+        dashes: [4,3],
+        label: (step.chosen.prob*100).toFixed(1) + '%',
+        font: { color: FLAG, size: 10, face: 'IBM Plex Mono', strokeWidth: 0 },
+        smooth: { type: 'cubicBezier', roundness: 0.5 },
+      });
+      trunkNodeId = nid2;
+    }
+
+    contextNode = trunkNodeId;
+  });
+
+  var container = document.getElementById('network');
+  var network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
+    layout: {
+      hierarchical: { enabled: true, direction: 'LR', levelSeparation: 130, nodeSpacing: 26, treeSpacing: 26, sortMethod: 'directed' },
+    },
+    physics: false,
+    interaction: { hover: true, dragNodes: false, zoomView: true, dragView: true },
+    nodes: { shape: 'box', margin: 6, widthConstraint: { minimum: 28 } },
+    edges: { arrows: { to: { enabled: false } } },
+  });
+  network.fit();
+} catch (e) {
+  console.error(e);
+  showError((e && e.message) ? e.message : String(e));
+}
+</script>
+</body>
+</html>
